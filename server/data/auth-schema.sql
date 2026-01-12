@@ -1,0 +1,19 @@
+CREATE TABLE IF NOT EXISTS users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  username VARCHAR(64) NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NOT NULL,
+  site_code INT NOT NULL,
+  site_user VARCHAR(64) NOT NULL,
+  status TINYINT DEFAULT 1,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS user_sites (
+  site_code INT PRIMARY KEY,
+  site_user VARCHAR(64) NOT NULL,
+  db_host VARCHAR(128) NOT NULL,
+  db_name VARCHAR(64) NOT NULL,
+  db_user VARCHAR(64) NOT NULL,
+  db_password VARCHAR(128) NOT NULL,
+  db_port INT NULL
+);

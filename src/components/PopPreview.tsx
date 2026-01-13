@@ -259,11 +259,25 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
     }
 
     // Bottom discount badge (percent only)
-    if (product.discountType !== 'cut' && product.discount > 0) {
-      const extra = product.extraDiscount ?? 0;
-      const member = product.memberDiscount ?? 0;
-      const hasExtras = extra > 0 || member > 0;
-      const rowWidth = hasExtras ? contentWidth : contentWidth * 0.4;
+    const totalDiscount = product.discount ?? 0;
+    const extraRaw = product.extraDiscount ?? 0;
+    const memberRaw = product.memberDiscount ?? 0;
+    if (product.discountType !== 'cut' && (totalDiscount > 0 || extraRaw > 0 || memberRaw > 0)) {
+      const baseRaw = totalDiscount - extraRaw - memberRaw;
+      const baseValue = Math.round(baseRaw);
+      const extra = Math.round(extraRaw);
+      const member = Math.round(memberRaw);
+      const items = [
+        baseValue > 0 ? { label: 'DISKON', value: `${baseValue}%`, colors: ['#ef4444', '#ef4444'] } : null,
+        extra > 0 ? { label: 'EXTRA DISKON', value: `${extra}%`, colors: ['#b45309', '#f59e0b'] } : null,
+        member > 0 ? { label: 'DISKON MEMBER', value: `${member}%`, colors: ['#1d4ed8', '#60a5fa'] } : null,
+      ].filter(Boolean) as { label: string; value: string; colors: [string, string] }[];
+
+      if (items.length === 0) {
+        return new Group(objects);
+      }
+
+      const rowWidth = items.length === 1 ? contentWidth * 0.4 : contentWidth;
       const rowHeight = (settings.layout === '4' ? 70 : settings.layout === '2' ? 84 : 96) * groupScale;
       const rowY = currentY + 6 * groupScale;
       const headerHeight = rowHeight * 0.42;
@@ -281,16 +295,6 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
         ry: radius,
         shadow: { color: 'rgba(15, 23, 42, 0.15)', blur: 6, offsetX: 0, offsetY: 2 },
       }));
-
-      const items = hasExtras
-        ? [
-            { label: 'DISKON', value: `${Math.round(product.discount - extra - member)}%`, colors: ['#991b1b', '#ef4444'] },
-            { label: 'EXTRA DISKON', value: `${Math.round(extra)}%`, colors: ['#b45309', '#f59e0b'] },
-            { label: 'DISKON MEMBER', value: `${Math.round(member)}%`, colors: ['#1d4ed8', '#60a5fa'] },
-          ]
-        : [
-            { label: 'DISKON', value: `${Math.round(product.discount)}%`, colors: ['#991b1b', '#ef4444'] },
-          ];
 
       const cellWidth = rowWidth / items.length;
 
@@ -344,12 +348,12 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
           fontSize: (settings.layout === '4' ? 26 : settings.layout === '2' ? 31 : 38) * groupScale,
           fontFamily: 'Inter, sans-serif',
           fontWeight: '800',
-          fill: hasExtras ? '#4b5563' : '#dc2626',
+          fill: items.length > 1 ? '#4b5563' : '#dc2626',
           originX: 'center',
           originY: 'center',
         }));
 
-        if (hasExtras && index > 0) {
+        if (items.length > 1 && index > 0) {
           objects.push(new Line([cellX, rowY + 6, cellX, rowY + rowHeight - 6], {
             stroke: '#e5e7eb',
             strokeWidth: 1,

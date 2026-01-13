@@ -137,11 +137,14 @@ const EditorPage = () => {
       try {
         const customTemplate = await templateStorage.getTemplate(selectedTemplate);
         if (customTemplate) {
+          const safeName = typeof customTemplate.name === 'string' && customTemplate.name.trim()
+            ? customTemplate.name
+            : 'Template';
           setSelectedTemplateData({
             id: customTemplate.id,
-            name: customTemplate.name,
+            name: safeName,
             description: customTemplate.description,
-            thumbnail: customTemplate.name.charAt(0).toUpperCase(),
+            thumbnail: safeName.charAt(0).toUpperCase(),
             layout: 'centered',
             type: 'custom',
             imageUrl: customTemplate.imageUrl,

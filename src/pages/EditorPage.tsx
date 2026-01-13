@@ -91,6 +91,37 @@ const EditorPage = () => {
   }, []);
 
   useEffect(() => {
+    let isActive = true;
+    const loadDefaultTemplate = async () => {
+      if (selectedTemplate) return;
+      try {
+        const stored = await templateStorage.getTemplates();
+        if (!isActive || stored.length === 0) return;
+        const first = stored[0];
+        const safeName =
+          typeof first.name === 'string' && first.name.trim() ? first.name : 'Template';
+        setSelectedTemplate(first.id);
+        setSelectedTemplateData({
+          id: first.id,
+          name: safeName,
+          description: first.description || '',
+          thumbnail: safeName.charAt(0).toUpperCase(),
+          layout: 'centered',
+          type: 'custom',
+          imageUrl: first.imageUrl,
+        });
+      } catch (error) {
+        console.warn('Failed to load default template:', error);
+      }
+    };
+
+    loadDefaultTemplate();
+    return () => {
+      isActive = false;
+    };
+  }, [selectedTemplate]);
+
+  useEffect(() => {
     const fetchProfile = async () => {
       const token = getAuthToken();
       if (!token) return;

@@ -216,6 +216,19 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
         originY: 'top',
       });
       objects.push(strikeText);
+      const strikeWidth = strikeText.getScaledWidth?.() ?? strikeText.width ?? 0;
+      if (product.uom) {
+        objects.push(new FabricText(`/${product.uom}`, {
+          left: centerX + strikeWidth / 2 + 6 * groupScale,
+          top: currentY + strikeFontSize * 0.1,
+          fontSize: Math.max(10, strikeFontSize * 0.7),
+          fontFamily: 'Inter, sans-serif',
+          fontWeight: '600',
+          fill: '#6b7280',
+          originX: 'left',
+          originY: 'top',
+        }));
+      }
 
       const textWidth = strikeFontSize * product.normalPrice.toString().length * 0.6 + 30;
       objects.push(new Line([centerX - textWidth / 2, currentY + strikeFontSize / 2, centerX + textWidth / 2, currentY + strikeFontSize / 2], {
@@ -238,25 +251,21 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
       originY: 'top',
     });
     objects.push(promoText);
-    const promoHeight = promoText.getScaledHeight?.() ?? promoText.height ?? priceSize;
-    currentY += promoHeight + 4 * groupScale;
-
+    const promoWidth = promoText.getScaledWidth?.() ?? promoText.width ?? 0;
     if (product.uom) {
-      const uomSize = (settings.layout === '4' ? 12 : settings.layout === '2' ? 14 : 16) * groupScale;
       objects.push(new FabricText(`/${product.uom}`, {
-        left: centerX,
-        top: currentY,
-        fontSize: uomSize,
+        left: centerX + promoWidth / 2 + 8 * groupScale,
+        top: currentY + priceSize * 0.15,
+        fontSize: Math.max(12, priceSize * 0.35),
         fontFamily: 'Inter, sans-serif',
         fontWeight: '600',
         fill: '#6b7280',
-        originX: 'center',
+        originX: 'left',
         originY: 'top',
       }));
-      currentY += uomSize + 6 * groupScale;
-    } else {
-      currentY += 6 * groupScale;
     }
+    const promoHeight = promoText.getScaledHeight?.() ?? promoText.height ?? priceSize;
+    currentY += promoHeight + 10 * groupScale;
 
     // Bottom discount badge (percent only)
     const totalDiscount = product.discount ?? 0;

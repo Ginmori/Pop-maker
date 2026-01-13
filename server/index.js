@@ -12,7 +12,8 @@ import { fileURLToPath } from "url";
 dotenv.config();
 
 const app = express();
-app.use(express.json({ limit: "10mb" }));
+app.use(express.json({ limit: "50mb" }));
+app.set("trust proxy", 1);
 
 const PORT = Number(process.env.API_PORT || 5050);
 
@@ -73,6 +74,7 @@ const authPool = mysql.createPool({
   user: process.env.AUTH_DB_USER || process.env.DB_USER,
   password: process.env.AUTH_DB_PASSWORD || process.env.DB_PASSWORD,
   database: process.env.AUTH_DB_NAME || process.env.DB_NAME,
+  charset: "utf8mb4_general_ci",
   waitForConnections: true,
   connectionLimit: 5,
   queueLimit: 0,
@@ -132,6 +134,7 @@ const getSitePool = (siteConfig) => {
     password: siteConfig.db_password,
     database: siteConfig.db_name,
     port: siteConfig.db_port ? Number(siteConfig.db_port) : undefined,
+    charset: "utf8mb4_general_ci",
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
@@ -188,14 +191,13 @@ const requireAdmin = async (req, res, next) => {
 const buildProductResponse = (row) => {
   const basePrice = toNumber(row.base_price);
   const finalPrice = toNumber(row.final_price);
-  const baseDiscount = toPercent(row.disc_1, row.disc_type1, basePrice);
-  const extraDiscount = toPercent(row.disc_2, row.disc_type2, basePrice);
-  const memberDiscount = 2;
+  const baseDiscount = toNumber(row.disc_1);
+  const extraDiscount = toNumber(row.disc_2) + toNumber(row.disc_3);
+  const memberDiscount = toNumber(row.disc_4);
 
   let totalDiscount = baseDiscount + extraDiscount + memberDiscount;
-  if (totalDiscount <= memberDiscount && basePrice > 0 && finalPrice > 0 && finalPrice < basePrice) {
-    const fallback = Math.round(((basePrice - finalPrice) / basePrice) * 100 * 100) / 100;
-    totalDiscount = fallback + memberDiscount;
+  if (totalDiscount <= 0 && basePrice > 0 && finalPrice > 0 && finalPrice < basePrice) {
+    totalDiscount = Math.round(((basePrice - finalPrice) / basePrice) * 100 * 100) / 100;
   }
 
   return {
@@ -203,11 +205,14 @@ const buildProductResponse = (row) => {
     name: row.pd_short_desc,
     description: row.pd_long_desc || undefined,
     barcode: row.barcode1,
+    category: row.kategori || undefined,
+    brandSegment: row.brand_segment || undefined,
+    descSegment: row.desc_segment || undefined,
     normalPrice: basePrice,
     promoPrice: finalPrice || basePrice,
     discount: Math.round(totalDiscount * 100) / 100,
     extraDiscount: Math.round(extraDiscount * 100) / 100 || undefined,
-    memberDiscount,
+    memberDiscount: Math.round(memberDiscount * 100) / 100 || undefined,
     discountType: "percent",
   };
 };
@@ -446,12 +451,19 @@ app.get("/api/products/:sku", requireAuth, async (req, res) => {
       pr.pd_short_desc,
       pr.pd_long_desc,
       pr.barcode1,
+      pr.segment1 AS kategori,
+      pr.segment2 AS brand_segment,
+      pr.segment4 AS desc_segment,
       pd.base_price,
       pd.final_price,
       pd.disc_type1,
       pd.disc_1,
       pd.disc_type2,
-      pd.disc_2
+      pd.disc_2,
+      pd.disc_type3,
+      pd.disc_3,
+      pd.disc_type4,
+      pd.disc_4
     FROM product pr
     INNER JOIN price_detail pd ON pd.pd_code = pr.pd_code
     INNER JOIN price p ON p.pc_code = pd.pc_code

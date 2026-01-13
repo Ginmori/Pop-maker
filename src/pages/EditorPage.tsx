@@ -46,16 +46,18 @@ const EditorPage = () => {
   const navigate = useNavigate();
   const [userLabel, setUserLabel] = useState(() => getAuthUser()?.username || 'User');
   const [isAdmin, setIsAdmin] = useState(() => getAuthUser()?.username === 'admin');
-  const defaultTemplate = templates[0] || {
-    id: 'custom-default',
-    name: 'Custom',
-    description: 'Template custom',
-    thumbnail: 'C',
-    layout: 'centered' as const,
-    type: 'custom' as const,
-  };
-  const [selectedTemplate, setSelectedTemplate] = useState(defaultTemplate.id);
-  const [selectedTemplateData, setSelectedTemplateData] = useState<Template>(defaultTemplate);
+  const defaultTemplate = templates[0];
+  const [selectedTemplate, setSelectedTemplate] = useState(defaultTemplate?.id || '');
+  const [selectedTemplateData, setSelectedTemplateData] = useState<Template>(
+    defaultTemplate || {
+      id: '',
+      name: '',
+      description: '',
+      thumbnail: '',
+      layout: 'centered' as const,
+      type: 'custom' as const,
+    }
+  );
   const [products, setProducts] = useState<Product[]>([]);
   const [brandList, setBrandList] = useState<Brand[]>(defaultBrands);
   const [previewScale, setPreviewScale] = useState(0.75);
@@ -68,6 +70,12 @@ const EditorPage = () => {
     layout: '1' as const,
   };
 
+  useEffect(() => {
+    if (!getAuthToken()) {
+      navigate('/login', { replace: true });
+    }
+  }, [navigate]);
+
   // Load default product on mount
   useEffect(() => {
     const storedBrands = readStoredBrands();
@@ -79,26 +87,7 @@ const EditorPage = () => {
   }, []);
 
   useEffect(() => {
-    const loadDefaultProduct = async () => {
-      let defaultProduct = await fetchProductBySku('SKU001');
-      if (!defaultProduct) {
-        defaultProduct = searchProduct('SKU001');
-      }
-      if (defaultProduct) {
-        const defaultBrand = brandList[0];
-        setProducts([{
-          ...defaultProduct,
-          brandId: defaultBrand?.id,
-          brand: defaultBrand?.name,
-          brandLogoText: defaultBrand?.logoText,
-          brandLogoUrl: defaultBrand?.logoData,
-          brandColor: defaultBrand?.logoBg,
-          brandTextColor: defaultBrand?.logoTextColor,
-        }]);
-      }
-    };
-
-    loadDefaultProduct();
+    setProducts([]);
   }, []);
 
   useEffect(() => {

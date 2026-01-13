@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback, forwardRef, useImperativeHandle } from 'react';
-import { Canvas as FabricCanvas, Rect, FabricText, Line, Group, FabricImage, Circle, Textbox } from 'fabric';
+import { Canvas as FabricCanvas, Rect, FabricText, Line, Group, FabricImage, Circle, Textbox, Gradient } from 'fabric';
 import { Product, formatPrice } from '@/data/products';
 import { Template } from '@/data/templates';
 import { PopSettingsState } from './PopSettings';
@@ -87,13 +87,16 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
     }
 
     // Brand (optional) with logo badge
-    if (product.brand) {
-      const logoRadius = (settings.layout === '4' ? 16 : settings.layout === '2' ? 20 : 24) * groupScale;
+    const brandLabel = product.brandSegment || product.brand;
+    const brandSlug = brandLabel ? brandLabel.toUpperCase().replace(/\s+/g, '_') : '';
+    const resolvedBrandLogoUrl = product.brandLogoUrl || (brandSlug ? `/brands/${brandSlug}.png` : undefined);
+    if (brandLabel) {
+      const logoRadius = (settings.layout === '4' ? 24 : settings.layout === '2' ? 29 : 36) * groupScale;
       const brandSize = (settings.layout === '4' ? 14 : settings.layout === '2' ? 16 : 18) * groupScale;
 
-      if (product.brandLogoUrl) {
+      if (resolvedBrandLogoUrl) {
         try {
-          const logoImg = await FabricImage.fromURL(product.brandLogoUrl);
+          const logoImg = await FabricImage.fromURL(resolvedBrandLogoUrl);
           logoImg.scaleToHeight(logoRadius * 2);
           logoImg.set({
             left: centerX,
@@ -136,7 +139,7 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
 
       currentY += logoRadius * 2 + 6 * groupScale;
 
-      objects.push(new FabricText(product.brand, {
+      objects.push(new FabricText(brandLabel, {
         left: centerX,
         top: currentY,
         fontSize: brandSize,
@@ -168,9 +171,10 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
     currentY += nameHeight + 6 * groupScale;
 
     // Description (optional)
-    if (product.description) {
+    const descText = product.descSegment || product.description;
+    if (descText) {
       const descSize = (settings.layout === '4' ? 12 : settings.layout === '2' ? 14 : 16) * groupScale;
-      const descBox = new Textbox(product.description, {
+      const descBox = new Textbox(descText, {
         left: centerX,
         top: currentY,
         width: contentWidth,
@@ -197,52 +201,9 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
     ));
     currentY += 10 * groupScale;
 
-    // Discount/Potongan badge
-    const badgeHeight = (settings.layout === '4' ? 26 : settings.layout === '2' ? 32 : 38) * groupScale;
-    const badgeFont = (settings.layout === '4' ? 13 : settings.layout === '2' ? 15 : 18) * groupScale;
-    const badgeText = product.discountType === 'cut' && product.discountAmount
-      ? `Potongan Rp ${formatPrice(product.discountAmount)}`
-      : `Diskon ${product.discount}%`;
-    const badgeWidth = Math.min(contentWidth, Math.max(120, badgeText.length * (badgeFont * 0.6)));
+    // Discount badge removed (center)
 
-    objects.push(new Rect({
-      left: centerX - badgeWidth / 2,
-      top: currentY,
-      width: badgeWidth,
-      height: badgeHeight,
-      fill: '#dc2626',
-      rx: 6,
-      ry: 6,
-    }));
-    objects.push(new FabricText(badgeText, {
-      left: centerX,
-      top: currentY + badgeHeight / 2,
-      fontSize: badgeFont,
-      fontFamily: 'Inter, sans-serif',
-      fontWeight: '700',
-      fill: '#ffffff',
-      originX: 'center',
-      originY: 'center',
-    }));
-    currentY += badgeHeight + 8 * groupScale;
-
-    // Promo Price
-    const priceSize = (settings.layout === '4' ? 38 : settings.layout === '2' ? 48 : 64) * groupScale;
-    const promoText = new FabricText(`Rp ${formatPrice(product.promoPrice)}`, {
-      left: centerX,
-      top: currentY,
-      fontSize: priceSize,
-      fontFamily: 'Inter, sans-serif',
-      fontWeight: '900',
-      fill: '#1f2937',
-      originX: 'center',
-      originY: 'top',
-    });
-    objects.push(promoText);
-    const promoHeight = promoText.getScaledHeight?.() ?? promoText.height ?? priceSize;
-    currentY += promoHeight + 10 * groupScale;
-
-    // Strike Price
+    // Strike Price (Normal) first
     if (settings.showStrikePrice) {
       const strikeFontSize = (settings.layout === '4' ? 14 : settings.layout === '2' ? 16 : 18) * groupScale;
       const strikeText = new FabricText(`Rp ${formatPrice(product.normalPrice)}`, {
@@ -264,78 +225,120 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
       currentY += strikeFontSize + 10 * groupScale;
     }
 
-    // Bottom breakdown row (percent discount only)
-    if (product.discountType !== 'cut') {
+    // Final Price (besar)
+    const priceSize = (settings.layout === '4' ? 38 : settings.layout === '2' ? 48 : 64) * groupScale;
+    const promoText = new FabricText(`Rp ${formatPrice(product.promoPrice)}`, {
+      left: centerX,
+      top: currentY,
+      fontSize: priceSize,
+      fontFamily: 'Inter, sans-serif',
+      fontWeight: '900',
+      fill: '#1f2937',
+      originX: 'center',
+      originY: 'top',
+    });
+    objects.push(promoText);
+    const promoHeight = promoText.getScaledHeight?.() ?? promoText.height ?? priceSize;
+    currentY += promoHeight + 10 * groupScale;
+
+    // Bottom discount badge (percent only)
+    if (product.discountType !== 'cut' && product.discount > 0) {
       const extra = product.extraDiscount ?? 0;
       const member = product.memberDiscount ?? 0;
-      const base = Math.max(0, product.discount - extra - member);
-      const rows = [];
-      if (base > 0) rows.push({ label: 'DISKON', value: `${base}%` });
-      if (extra > 0) rows.push({ label: 'EXTRA DISKON', value: `${extra}%` });
-      if (member > 0) rows.push({ label: 'DISKON MEMBER', value: `${member}%` });
+      const hasExtras = extra > 0 || member > 0;
+      const rowWidth = hasExtras ? contentWidth : contentWidth * 0.4;
+      const rowHeight = (settings.layout === '4' ? 70 : settings.layout === '2' ? 84 : 96) * groupScale;
+      const rowY = currentY + 6 * groupScale;
+      const headerHeight = rowHeight * 0.42;
+      const radius = 16 * groupScale;
 
-      if (rows.length > 1) {
-        const rowWidth = contentWidth;
-        const rowHeight = (settings.layout === '4' ? 36 : settings.layout === '2' ? 40 : 44) * groupScale;
-        const cellWidth = rowWidth / rows.length;
-        const rowY = currentY + 6 * groupScale;
+      objects.push(new Rect({
+        left: centerX - rowWidth / 2,
+        top: rowY,
+        width: rowWidth,
+        height: rowHeight,
+        fill: '#f8fafc',
+        stroke: '#d1d5db',
+        strokeWidth: 1,
+        rx: radius,
+        ry: radius,
+        shadow: { color: 'rgba(15, 23, 42, 0.15)', blur: 6, offsetX: 0, offsetY: 2 },
+      }));
+
+      const items = hasExtras
+        ? [
+            { label: 'DISKON', value: `${Math.round(product.discount - extra - member)}%`, colors: ['#991b1b', '#ef4444'] },
+            { label: 'EXTRA DISKON', value: `${Math.round(extra)}%`, colors: ['#b45309', '#f59e0b'] },
+            { label: 'DISKON MEMBER', value: `${Math.round(member)}%`, colors: ['#1d4ed8', '#60a5fa'] },
+          ]
+        : [
+            { label: 'DISKON', value: `${Math.round(product.discount)}%`, colors: ['#991b1b', '#ef4444'] },
+          ];
+
+      const cellWidth = rowWidth / items.length;
+
+      items.forEach((item, index) => {
+        const cellX = centerX - rowWidth / 2 + cellWidth * index;
 
         objects.push(new Rect({
-          left: centerX - rowWidth / 2,
+          left: cellX,
           top: rowY,
-          width: rowWidth,
+          width: cellWidth,
           height: rowHeight,
-          fill: '#f3f4f6',
-          stroke: '#e5e7eb',
+          fill: '#f8fafc',
+          stroke: '#d1d5db',
           strokeWidth: 1,
-          rx: 6,
-          ry: 6,
+          rx: radius,
+          ry: radius,
         }));
 
-        const cellStyles = rows.map((item) => {
-          if (item.label === 'DISKON') {
-            return { bg: '#dc2626', text: '#ffffff' };
-          }
-          if (item.label === 'EXTRA DISKON') {
-            return { bg: '#f97316', text: '#ffffff' };
-          }
-          return { bg: '#2563eb', text: '#ffffff' };
+        const gradient = new Gradient({
+          type: 'linear',
+          coords: { x1: cellX, y1: rowY, x2: cellX + cellWidth, y2: rowY },
+          colorStops: [
+            { offset: 0, color: item.colors[0] },
+            { offset: 1, color: item.colors[1] },
+          ],
         });
 
-        rows.forEach((item, index) => {
-          const cellX = centerX - rowWidth / 2 + cellWidth * index;
-          const style = cellStyles[index];
-          objects.push(new Rect({
-            left: cellX,
-            top: rowY,
-            width: cellWidth,
-            height: rowHeight,
-            fill: style.bg,
+        objects.push(new Rect({
+          left: cellX,
+          top: rowY,
+          width: cellWidth,
+          height: headerHeight,
+          fill: gradient,
+          rx: radius,
+          ry: radius,
+        }));
+
+        objects.push(new FabricText(item.label, {
+          left: cellX + cellWidth / 2,
+          top: rowY + headerHeight * 0.5,
+          fontSize: (settings.layout === '4' ? 12 : settings.layout === '2' ? 13 : 14) * groupScale,
+          fontFamily: 'Inter, sans-serif',
+          fontWeight: '800',
+          fill: '#ffffff',
+          originX: 'center',
+          originY: 'center',
+        }));
+        objects.push(new FabricText(item.value, {
+          left: cellX + cellWidth / 2,
+          top: rowY + headerHeight + (rowHeight - headerHeight) * 0.62,
+          fontSize: (settings.layout === '4' ? 26 : settings.layout === '2' ? 31 : 38) * groupScale,
+          fontFamily: 'Inter, sans-serif',
+          fontWeight: '800',
+          fill: hasExtras ? '#4b5563' : '#dc2626',
+          originX: 'center',
+          originY: 'center',
+        }));
+
+        if (hasExtras && index > 0) {
+          objects.push(new Line([cellX, rowY + 6, cellX, rowY + rowHeight - 6], {
             stroke: '#e5e7eb',
             strokeWidth: 1,
           }));
-          objects.push(new FabricText(item.label, {
-            left: cellX + cellWidth / 2,
-            top: rowY + rowHeight * 0.35,
-            fontSize: (settings.layout === '4' ? 9 : settings.layout === '2' ? 10 : 11) * groupScale,
-            fontFamily: 'Inter, sans-serif',
-            fontWeight: '700',
-            fill: style.text,
-            originX: 'center',
-            originY: 'center',
-          }));
-          objects.push(new FabricText(item.value, {
-            left: cellX + cellWidth / 2,
-            top: rowY + rowHeight * 0.7,
-            fontSize: (settings.layout === '4' ? 12 : settings.layout === '2' ? 14 : 16) * groupScale,
-            fontFamily: 'Inter, sans-serif',
-            fontWeight: '700',
-            fill: style.text,
-            originX: 'center',
-            originY: 'center',
-          }));
-        });
-      }
+        }
+      });
     }
 
     return new Group(objects);
@@ -402,14 +405,15 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
       const images: string[] = [];
       for (let index = 0; index < totalPages; index++) {
         const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = A4_WIDTH;
-        tempCanvas.height = A4_HEIGHT;
+        tempCanvas.width = A4_WIDTH * PRINT_SCALE;
+        tempCanvas.height = A4_HEIGHT * PRINT_SCALE;
         const canvas = new FabricCanvas(tempCanvas, {
-          width: A4_WIDTH,
-          height: A4_HEIGHT,
+          width: A4_WIDTH * PRINT_SCALE,
+          height: A4_HEIGHT * PRINT_SCALE,
           backgroundColor: '#ffffff',
           selection: false,
         });
+        canvas.setZoom(PRINT_SCALE);
 
         await renderPageCanvas(canvas, products[index]);
         images.push(canvas.toDataURL({ format: 'png' }));

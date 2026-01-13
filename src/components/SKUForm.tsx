@@ -3,13 +3,6 @@ import { Product, searchProduct, formatPrice } from '@/data/products';
 import { fetchProductBySku, searchProducts, ProductSuggestion } from '@/lib/productApi';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Search, Trash2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { Brand } from '@/data/brands';
@@ -23,7 +16,6 @@ interface SKUFormProps {
 
 export const SKUForm = ({ products, onAddProduct, onRemoveProduct, brands }: SKUFormProps) => {
   const [mode, setMode] = useState<'sku' | 'custom'>('sku');
-  const [selectedBrandId, setSelectedBrandId] = useState<string | undefined>(brands[0]?.id);
   const [skuInput, setSkuInput] = useState('');
   const [skuSuggestions, setSkuSuggestions] = useState<ProductSuggestion[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -38,11 +30,6 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, brands }: SKU
 
   const findBrand = (id?: string) => brands.find((b) => b.id === id);
 
-  useEffect(() => {
-    if (!selectedBrandId && brands.length > 0) {
-      setSelectedBrandId(brands[0].id);
-    }
-  }, [brands, selectedBrandId]);
 
   useEffect(() => {
     if (mode !== 'sku') {
@@ -75,11 +62,6 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, brands }: SKU
   }, [skuInput, mode]);
 
   const handleSearch = async () => {
-    if (!selectedBrandId) {
-      toast.error('Pilih brand terlebih dahulu');
-      return;
-    }
-
     if (!skuInput.trim()) {
       toast.error('Masukkan SKU terlebih dahulu');
       return;
@@ -95,13 +77,18 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, brands }: SKU
         toast.error('Produk sudah ditambahkan');
         return;
       }
-      const selectedBrand = findBrand(selectedBrandId);
+      const selectedBrand = findBrand(brands[0]?.id);
+      const brandName = selectedBrand?.name;
+      const brandSource = product.brandSegment || brandName;
+      const brandSlug = brandSource ? brandSource.toUpperCase().replace(/\s+/g, '_') : undefined;
+      const brandLogoUrl = product.brandLogoUrl || (brandSlug ? `/brands/${brandSlug}.png` : selectedBrand?.logoData);
+
       const enrichedProduct: Product = {
         ...product,
         brandId: selectedBrand?.id,
-        brand: selectedBrand?.name,
+        brand: product.brandSegment || brandName,
         brandLogoText: selectedBrand?.logoText,
-        brandLogoUrl: selectedBrand?.logoData,
+        brandLogoUrl,
         brandColor: selectedBrand?.logoBg,
         brandTextColor: selectedBrand?.logoTextColor,
         discountType: 'percent',
@@ -140,12 +127,10 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, brands }: SKU
   };
 
   const handleAddCustomProduct = () => {
-    if (!selectedBrandId) {
-      toast.error('Pilih brand terlebih dahulu');
-      return;
-    }
-
-    const selectedBrand = findBrand(selectedBrandId);
+    const selectedBrand = findBrand(brands[0]?.id);
+    const brandName = selectedBrand?.name;
+    const brandSlug = brandName ? brandName.toUpperCase().replace(/\s+/g, '_') : undefined;
+    const brandLogoUrl = brandSlug ? `/brands/${brandSlug}.png` : selectedBrand?.logoData;
 
     if (!nameInput.trim() || !descriptionInput.trim()) {
       toast.error('Nama Produk dan Deskripsi wajib diisi');
@@ -213,9 +198,9 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, brands }: SKU
       sku: id,
       name: nameInput.trim(),
       brandId: selectedBrand?.id,
-      brand: selectedBrand?.name,
+      brand: brandName,
       brandLogoText: selectedBrand?.logoText,
-      brandLogoUrl: selectedBrand?.logoData,
+      brandLogoUrl,
       brandColor: selectedBrand?.logoBg,
       brandTextColor: selectedBrand?.logoTextColor,
       description: descriptionInput.trim(),
@@ -239,25 +224,7 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, brands }: SKU
     <div className="space-y-3">
       <h3 className="section-title">Produk / SKU</h3>
 
-      {/* Brand Selector */}
-      <div className="space-y-1">
-        <p className="text-xs text-muted-foreground">Pilih Brand</p>
-        <Select
-          value={selectedBrandId}
-          onValueChange={(val) => setSelectedBrandId(val)}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Pilih brand" />
-          </SelectTrigger>
-          <SelectContent>
-            {brands.map((brand) => (
-              <SelectItem key={brand.id} value={brand.id}>
-                {brand.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      {/* Brand Selector removed */}
 
       {/* Mode Selector */}
       <div className="grid grid-cols-2 gap-2">

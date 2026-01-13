@@ -153,7 +153,7 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
     }
 
     // Product Name
-    const nameSize = (settings.layout === '4' ? 20 : settings.layout === '2' ? 24 : 30) * groupScale;
+    const nameSize = (settings.layout === '4' ? 18 : settings.layout === '2' ? 22 : 28) * groupScale;
     const nameBox = new Textbox(product.name, {
       left: centerX,
       top: currentY,
@@ -239,33 +239,94 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
     }
 
     // Final Price (besar)
-    const priceSize = (settings.layout === '4' ? 38 : settings.layout === '2' ? 48 : 64) * groupScale;
-    const promoText = new FabricText(`Rp ${formatPrice(product.promoPrice)}`, {
+    const priceSize = (settings.layout === '4' ? 44 : settings.layout === '2' ? 56 : 72) * groupScale;
+    const formattedPrice = formatPrice(product.promoPrice);
+    const splitIndex = formattedPrice.lastIndexOf('.');
+    const mainPrice = splitIndex > -1 ? formattedPrice.slice(0, splitIndex) : formattedPrice;
+    const tailDigits = splitIndex > -1 ? formattedPrice.slice(splitIndex + 1) : '';
+
+    const currencySize = Math.max(12, priceSize * 0.4);
+    const currencyText = new FabricText('Rp.', {
+      left: centerX,
+      top: currentY + priceSize * 0.12,
+      fontSize: currencySize,
+      fontFamily: 'Inter, sans-serif',
+      fontWeight: '700',
+      fill: '#1f2937',
+      originX: 'left',
+      originY: 'top',
+    });
+    const currencyWidth = currencyText.getScaledWidth?.() ?? currencyText.width ?? 0;
+
+    const promoText = new FabricText(mainPrice, {
       left: centerX,
       top: currentY,
       fontSize: priceSize,
       fontFamily: 'Inter, sans-serif',
       fontWeight: '900',
       fill: '#1f2937',
-      originX: 'center',
+      originX: 'left',
       originY: 'top',
     });
-    objects.push(promoText);
     const promoWidth = promoText.getScaledWidth?.() ?? promoText.width ?? 0;
+
+    let tailTop = currentY;
+    let tailHeight = 0;
+    let tailWidth = 0;
+    let tailText: FabricText | null = null;
+    if (tailDigits) {
+      const tailSize = Math.max(10, priceSize * 0.35);
+      tailText = new FabricText(`.${tailDigits}`, {
+        left: centerX,
+        top: currentY + priceSize * 0.08,
+        fontSize: tailSize,
+        fontFamily: 'Inter, sans-serif',
+        fontWeight: '800',
+        fill: '#1f2937',
+        originX: 'left',
+        originY: 'top',
+      });
+      tailTop = tailText.top ?? tailTop;
+      tailHeight = tailText.getScaledHeight?.() ?? tailText.height ?? tailSize;
+      tailWidth = tailText.getScaledWidth?.() ?? tailText.width ?? 0;
+    }
+
+    const gapMain = 6 * groupScale;
+    const gapTail = tailDigits ? 4 * groupScale : 0;
+    const totalWidth = currencyWidth + gapMain + promoWidth + gapTail + (tailDigits ? tailWidth : 0);
+    const startX = centerX - totalWidth / 2;
+
+    currencyText.set({ left: startX });
+    promoText.set({ left: startX + currencyWidth + gapMain });
+    if (tailText) {
+      tailText.set({ left: startX + currencyWidth + gapMain + promoWidth + gapTail });
+    }
+
+    objects.push(currencyText);
+    objects.push(promoText);
+    if (tailText) {
+      objects.push(tailText);
+    }
+
     if (product.uom) {
+      const uomSize = Math.max(10, priceSize * 0.22);
+      const uomLeft = startX + currencyWidth + gapMain + promoWidth + gapTail;
+      const uomTop = tailDigits ? tailTop + tailHeight + 1 * groupScale : currentY + priceSize * 0.35;
       objects.push(new FabricText(`/${product.uom}`, {
-        left: centerX + promoWidth / 2 + 8 * groupScale,
-        top: currentY + priceSize * 0.15,
-        fontSize: Math.max(12, priceSize * 0.35),
+        left: uomLeft,
+        top: uomTop,
+        fontSize: uomSize,
         fontFamily: 'Inter, sans-serif',
         fontWeight: '600',
-        fill: '#6b7280',
+        fill: '#1f2937',
         originX: 'left',
         originY: 'top',
       }));
     }
+
     const promoHeight = promoText.getScaledHeight?.() ?? promoText.height ?? priceSize;
-    currentY += promoHeight + 10 * groupScale;
+    const extraHeight = Math.max(promoHeight, tailTop - currentY + tailHeight);
+    currentY += extraHeight + 10 * groupScale;
 
     // Bottom discount badge (percent only)
     const totalDiscount = product.discount ?? 0;

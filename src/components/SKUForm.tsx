@@ -19,6 +19,7 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, brands }: SKU
   const [skuInput, setSkuInput] = useState('');
   const [skuSuggestions, setSkuSuggestions] = useState<ProductSuggestion[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [priceMode, setPriceMode] = useState<'discount' | 'cut'>('discount');
   const [nameInput, setNameInput] = useState('');
   const [descriptionInput, setDescriptionInput] = useState('');
@@ -29,7 +30,7 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, brands }: SKU
   const [memberDiscountInput, setMemberDiscountInput] = useState('');
 
   const findBrand = (id?: string) => brands.find((b) => b.id === id);
-
+  const normalizeSku = (value: string) => value.replace(/\s+/g, '');
 
   useEffect(() => {
     if (mode !== 'sku') {
@@ -61,45 +62,52 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, brands }: SKU
     };
   }, [skuInput, mode]);
 
-  const handleSearch = async () => {
-    if (!skuInput.trim()) {
+  const handleSearch = async (overrideSku?: string) => {
+    const skuValue = normalizeSku(overrideSku ?? skuInput);
+    if (!skuValue) {
       toast.error('Masukkan SKU terlebih dahulu');
       return;
     }
+    if (isSubmitting) return;
 
-    let product = await fetchProductBySku(skuInput);
-    if (!product) {
-      product = searchProduct(skuInput);
-    }
-    if (product) {
-      const exists = products.find((p) => p.sku === product.sku);
-      if (exists) {
-        toast.error('Produk sudah ditambahkan');
-        return;
+    setIsSubmitting(true);
+    try {
+      let product = await fetchProductBySku(skuValue);
+      if (!product) {
+        product = searchProduct(skuValue);
       }
-      const selectedBrand = findBrand(brands[0]?.id);
-      const brandName = selectedBrand?.name;
-      const brandSource = product.brandSegment || brandName;
-      const brandSlug = brandSource ? brandSource.toUpperCase().replace(/\s+/g, '_') : undefined;
-      const brandLogoUrl = product.brandLogoUrl || (brandSlug ? `/brands/${brandSlug}.png` : selectedBrand?.logoData);
+      if (product) {
+        const exists = products.find((p) => p.sku === product.sku);
+        if (exists) {
+          toast.error('Produk sudah ditambahkan');
+          return;
+        }
+        const selectedBrand = findBrand(brands[0]?.id);
+        const brandName = selectedBrand?.name;
+        const brandSource = product.brandSegment || brandName;
+        const brandSlug = brandSource ? brandSource.toUpperCase().replace(/\s+/g, '_') : undefined;
+        const brandLogoUrl = product.brandLogoUrl || (brandSlug ? `/brands/${brandSlug}.png` : selectedBrand?.logoData);
 
-      const enrichedProduct: Product = {
-        ...product,
-        brandId: selectedBrand?.id,
-        brand: product.brandSegment || brandName,
-        brandLogoText: selectedBrand?.logoText,
-        brandLogoUrl,
-        brandColor: selectedBrand?.logoBg,
-        brandTextColor: selectedBrand?.logoTextColor,
-        discountType: 'percent',
-      };
+        const enrichedProduct: Product = {
+          ...product,
+          brandId: selectedBrand?.id,
+          brand: product.brandSegment || brandName,
+          brandLogoText: selectedBrand?.logoText,
+          brandLogoUrl,
+          brandColor: selectedBrand?.logoBg,
+          brandTextColor: selectedBrand?.logoTextColor,
+          discountType: 'percent',
+        };
 
-      onAddProduct(enrichedProduct);
-      setSkuInput('');
-      setSkuSuggestions([]);
-      toast.success(`Produk ${product.name} ditambahkan`);
-    } else {
-      toast.error('SKU tidak ditemukan');
+        onAddProduct(enrichedProduct);
+        setSkuInput('');
+        setSkuSuggestions([]);
+        toast.success(`Produk ${product.name} ditambahkan`);
+      } else {
+        toast.error('SKU tidak ditemukan');
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -110,9 +118,10 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, brands }: SKU
   };
 
   const handleSelectSuggestion = (suggestion: ProductSuggestion) => {
-    setSkuInput(suggestion.sku);
+    const normalizedSku = normalizeSku(suggestion.sku);
+    setSkuInput(normalizedSku);
     setSkuSuggestions([]);
-    void handleSearch();
+    void handleSearch(normalizedSku);
   };
 
   const resetCustomInputs = () => {
@@ -255,9 +264,15 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, brands }: SKU
               onKeyDown={handleKeyDown}
               className="flex-1"
             />
-            <Button onClick={handleSearch} size="default">
-              <Search className="w-4 h-4 mr-1" />
-              Cari
+            <Button onClick={handleSearch} size="default" disabled={isSubmitting}>
+              {isSubmitting ? (
+                'Mencari...'
+              ) : (
+                <>
+                  <Search className="w-4 h-4 mr-1" />
+                  Cari
+                </>
+              )}
             </Button>
           </div>
           {skuInput.trim().length > 0 ? (
@@ -270,8 +285,9 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, brands }: SKU
                     <button
                       key={item.sku}
                       type="button"
-                      className="w-full px-3 py-2 text-left text-sm hover:bg-muted/60"
+                      className="w-full px-3 py-2 text-left text-sm hover:bg-muted/60 disabled:opacity-60"
                       onClick={() => handleSelectSuggestion(item)}
+                      disabled={isSubmitting}
                     >
                       <span className="font-mono text-xs text-muted-foreground">{item.sku}</span>
                       <span className="ml-2 text-foreground">{item.name}</span>

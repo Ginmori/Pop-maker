@@ -478,7 +478,7 @@ app.get("/api/products/:sku", requireAuth, async (req, res) => {
                     pd.segment4,
                     pd.consignment as co
                     FROM rpt_price_tag_v2 p inner join product pd on p.pd_code = pd.pd_code
-                    WHERE p.pd_code = ?
+                    WHERE TRIM(p.pd_code) = TRIM(?)
     ORDER BY p.effdate DESC
     LIMIT 1;
   `;
@@ -512,10 +512,10 @@ app.get("/api/products", requireAuth, async (req, res) => {
 
   const sql = `
     SELECT
-      pr.pd_code,
+      TRIM(pr.pd_code) as pd_code,
       pr.pd_short_desc
     FROM rpt_price_tag_v2 pr
-    WHERE (pr.pd_code LIKE ? OR pr.pd_short_desc LIKE ?)
+    WHERE (TRIM(pr.pd_code) LIKE ? OR pr.pd_short_desc LIKE ?)
     ORDER BY pr.pd_code ASC
     LIMIT 20;
   `;

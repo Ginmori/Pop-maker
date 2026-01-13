@@ -19,6 +19,7 @@ export interface Product {
   description?: string;
   extraDiscount?: number;
   memberDiscount?: number;
+  uom?: string;
   isCustom?: boolean;
 }
 

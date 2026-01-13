@@ -39,6 +39,7 @@ export const fetchProductBySku = async (sku: string): Promise<Product | null> =>
     extraDiscount: data.extraDiscount ? Number(data.extraDiscount) : undefined,
     memberDiscount: data.memberDiscount ? Number(data.memberDiscount) : undefined,
     discountType: data.discountType || "percent",
+    uom: data.uom || undefined,
   };
 };
 

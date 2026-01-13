@@ -475,6 +475,7 @@ app.get("/api/products/:sku", requireAuth, async (req, res) => {
                         WHEN pd.segment1 = 'CAT' AND pd.segment2 = 'SPECTRUM' THEN 'SPECTRUM_CAT'
                         ELSE pd.segment2
                     END AS brand,
+                    pd.segment4,
                     pd.consignment as co
                     FROM rpt_price_tag_v2 p inner join product pd on p.pd_code = pd.pd_code
                     WHERE p.pd_code = ?

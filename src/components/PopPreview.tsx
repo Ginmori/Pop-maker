@@ -239,7 +239,24 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
     });
     objects.push(promoText);
     const promoHeight = promoText.getScaledHeight?.() ?? promoText.height ?? priceSize;
-    currentY += promoHeight + 10 * groupScale;
+    currentY += promoHeight + 4 * groupScale;
+
+    if (product.uom) {
+      const uomSize = (settings.layout === '4' ? 12 : settings.layout === '2' ? 14 : 16) * groupScale;
+      objects.push(new FabricText(`/${product.uom}`, {
+        left: centerX,
+        top: currentY,
+        fontSize: uomSize,
+        fontFamily: 'Inter, sans-serif',
+        fontWeight: '600',
+        fill: '#6b7280',
+        originX: 'center',
+        originY: 'top',
+      }));
+      currentY += uomSize + 6 * groupScale;
+    } else {
+      currentY += 6 * groupScale;
+    }
 
     // Bottom discount badge (percent only)
     if (product.discountType !== 'cut' && product.discount > 0) {

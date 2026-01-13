@@ -211,7 +211,7 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
         top: currentY,
         fontSize: strikeFontSize,
         fontFamily: 'Inter, sans-serif',
-        fill: '#9ca3af',
+        fill: '#dc2626',
         originX: 'center',
         originY: 'top',
       });
@@ -219,7 +219,7 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
 
       const textWidth = strikeFontSize * product.normalPrice.toString().length * 0.6 + 30;
       objects.push(new Line([centerX - textWidth / 2, currentY + strikeFontSize / 2, centerX + textWidth / 2, currentY + strikeFontSize / 2], {
-        stroke: '#9ca3af',
+        stroke: '#dc2626',
         strokeWidth: 2,
       }));
       currentY += strikeFontSize + 10 * groupScale;

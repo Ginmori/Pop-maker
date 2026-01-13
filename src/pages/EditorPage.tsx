@@ -99,6 +99,11 @@ const EditorPage = () => {
         const response = await fetch('/api/me', {
           headers: { Authorization: `Bearer ${token}` },
         });
+        if (response.status === 401) {
+          clearAuthToken();
+          navigate('/login', { replace: true });
+          return;
+        }
         if (!response.ok) return;
         const data = await response.json();
         if (data?.user?.username) {

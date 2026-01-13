@@ -12,8 +12,7 @@ import { fileURLToPath } from "url";
 dotenv.config();
 
 const app = express();
-app.use(express.json({ limit: "50mb" }));
-app.set("trust proxy", 1);
+app.use(express.json({ limit: "10mb" }));
 
 const PORT = Number(process.env.API_PORT || 5050);
 
@@ -191,9 +190,17 @@ const requireAdmin = async (req, res, next) => {
 const buildProductResponse = (row) => {
   const basePrice = toNumber(row.base_price);
   const finalPrice = toNumber(row.final_price);
-  const baseDiscount = toNumber(row.disc_1);
-  const extraDiscount = toNumber(row.disc_2) + toNumber(row.disc_3);
-  const memberDiscount = toNumber(row.disc_4);
+  const baseDiscount = toNumber(row.disc1 ?? row.disc_1);
+  const extraDiscount = toNumber(row.disc2 ?? row.disc_2) + toNumber(row.disc3 ?? row.disc_3);
+  const memberDiscount = toNumber(row.disc4 ?? row.disc_4);
+  const sku = row.code ?? row.pd_code;
+  const name = row.name ?? row.pd_short_desc;
+  const description =
+    row.pd_long_desc ||
+    row.description ||
+    (row.size && row.uom ? `${row.size} ${row.uom}` : undefined);
+  const brandSegment = row.brand ?? row.segment2;
+  const descSegment = row.desc ?? row.segment4;
 
   let totalDiscount = baseDiscount + extraDiscount + memberDiscount;
   if (totalDiscount <= 0 && basePrice > 0 && finalPrice > 0 && finalPrice < basePrice) {
@@ -201,19 +208,23 @@ const buildProductResponse = (row) => {
   }
 
   return {
-    sku: row.pd_code,
-    name: row.pd_short_desc,
-    description: row.pd_long_desc || undefined,
-    barcode: row.barcode1,
-    category: row.kategori || undefined,
-    brandSegment: row.brand_segment || undefined,
-    descSegment: row.desc_segment || undefined,
+    sku,
+    name,
+    description,
+    barcode: row.barcode ?? row.barcode1,
     normalPrice: basePrice,
     promoPrice: finalPrice || basePrice,
     discount: Math.round(totalDiscount * 100) / 100,
     extraDiscount: Math.round(extraDiscount * 100) / 100 || undefined,
     memberDiscount: Math.round(memberDiscount * 100) / 100 || undefined,
     discountType: "percent",
+    brandSegment: brandSegment || undefined,
+    descSegment: descSegment || undefined,
+    size: row.size ?? undefined,
+    uom: row.uom ?? undefined,
+    basePricePerMeter: row.base_price_per_meter ?? undefined,
+    finalPricePerMeter: row.final_price_per_meter ?? undefined,
+    consignment: row.co ?? undefined,
   };
 };
 
@@ -447,31 +458,26 @@ app.get("/api/products/:sku", requireAuth, async (req, res) => {
 
   const sql = `
     SELECT
-      pr.pd_code,
-      pr.pd_short_desc,
-      pr.pd_long_desc,
-      pr.barcode1,
-      pr.segment1 AS kategori,
-      pr.segment2 AS brand_segment,
-      pr.segment4 AS desc_segment,
-      pd.base_price,
-      pd.final_price,
-      pd.disc_type1,
-      pd.disc_1,
-      pd.disc_type2,
-      pd.disc_2,
-      pd.disc_type3,
-      pd.disc_3,
-      pd.disc_type4,
-      pd.disc_4
-    FROM product pr
-    INNER JOIN price_detail pd ON pd.pd_code = pr.pd_code
-    INNER JOIN price p ON p.pc_code = pd.pc_code
-    WHERE pr.pd_code = ?
-      AND pd.bpcust_type_code = 'BPCT.000'
-      AND p.pc_status = 1
-      AND pd.pcdet_status = 1
-      AND NOW() BETWEEN p.effdate AND p.exp_end_date
+                    p.pd_code AS code,
+                    p.pd_short_desc AS name,
+                    ROUND(p.base_price) AS base_price,
+                    ROUND(p.final_price) AS final_price,
+                    p.disc_1 AS disc1,
+                    p.disc_2 AS disc2,
+                    p.disc_3 AS disc3,
+                    p.disc_4 AS disc4,
+                    round(ifnull(p.base_price,0) / p.size) as base_price_per_meter,
+                    round(ifnull(p.final_price,0) / p.size) as final_price_per_meter,
+                    p.pd_uom as uom,
+                    p.size as size,
+                    CASE
+                        WHEN p.pd_short_desc LIKE '%SPECTRUM TBA%' THEN 'sci'
+                        WHEN pd.segment1 = 'CAT' AND pd.segment2 = 'SPECTRUM' THEN 'SPECTRUM_CAT'
+                        ELSE pd.segment2
+                    END AS brand,
+                    pd.consignment as co
+                    FROM rpt_price_tag_v2 p inner join product pd on p.pd_code = pd.pd_code
+                    WHERE p.pd_code = ?
     ORDER BY p.effdate DESC
     LIMIT 1;
   `;
@@ -507,7 +513,7 @@ app.get("/api/products", requireAuth, async (req, res) => {
     SELECT
       pr.pd_code,
       pr.pd_short_desc
-    FROM product pr
+    FROM rpt_price_tag_v2 pr
     WHERE (pr.pd_code LIKE ? OR pr.pd_short_desc LIKE ?)
     ORDER BY pr.pd_code ASC
     LIMIT 20;

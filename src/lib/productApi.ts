@@ -1,5 +1,12 @@
 import { Product } from "@/data/products";
-import { getAuthToken } from "@/lib/auth";
+import { clearAuthToken, getAuthToken } from "@/lib/auth";
+
+const handleUnauthorized = () => {
+  clearAuthToken();
+  if (typeof window !== "undefined") {
+    window.location.href = "/login";
+  }
+};
 
 export const fetchProductBySku = async (sku: string): Promise<Product | null> => {
   const trimmed = sku.trim();
@@ -9,6 +16,10 @@ export const fetchProductBySku = async (sku: string): Promise<Product | null> =>
   const response = await fetch(`/api/products/${encodeURIComponent(trimmed)}`, {
     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
   });
+  if (response.status === 401) {
+    handleUnauthorized();
+    return null;
+  }
   if (!response.ok) {
     return null;
   }
@@ -44,6 +55,10 @@ export const searchProducts = async (search: string): Promise<ProductSuggestion[
   const response = await fetch(`/api/products?search=${encodeURIComponent(trimmed)}`, {
     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
   });
+  if (response.status === 401) {
+    handleUnauthorized();
+    return [];
+  }
   if (!response.ok) {
     return [];
   }

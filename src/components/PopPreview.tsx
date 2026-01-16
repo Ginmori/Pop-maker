@@ -76,6 +76,23 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
     const startY = y + itemHeight * 0.3;
     let currentY = startY;
     const contentWidth = itemWidth * (settings.layout === '4' ? 0.74 : 0.8);
+    const fitTextToLines = (text: string, maxLines: number, box: Textbox, baseSize: number) => {
+      const measureLines = () =>
+        (box.textLines ?? (box as { _textLines?: string[] })._textLines ?? []).length;
+
+      box.set({ text, fontSize: baseSize });
+      box.initDimensions();
+      if (measureLines() <= maxLines) return;
+
+      let size = baseSize;
+      const minSize = Math.max(12, baseSize * 0.7);
+      while (size > minSize) {
+        size -= 1;
+        box.set({ fontSize: size });
+        box.initDimensions();
+        if (measureLines() <= maxLines) return;
+      }
+    };
 
     // Background (only for default templates)
     if (!hasCustomTemplate) {
@@ -170,6 +187,7 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
       originX: 'center',
       originY: 'top',
     });
+    fitTextToLines(product.name, 2, nameBox, nameSize);
     objects.push(nameBox);
     const nameHeight = Math.max(nameSize, nameBox.getScaledHeight?.() ?? nameBox.height ?? nameSize);
     currentY += nameHeight + 6 * groupScale;

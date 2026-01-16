@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Product, searchProduct, formatPrice } from '@/data/products';
-import { fetchProductBySku, searchProducts, ProductSuggestion } from '@/lib/productApi';
+import { fetchBrandSegments, fetchProductBySku, searchProducts, ProductSuggestion } from '@/lib/productApi';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, Trash2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { Brand } from '@/data/brands';
@@ -24,7 +25,11 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [priceMode, setPriceMode] = useState<'discount' | 'cut'>('discount');
   const [nameInput, setNameInput] = useState('');
+  const [customBrandInput, setCustomBrandInput] = useState('');
+  const [brandOptions, setBrandOptions] = useState<string[]>([]);
+  const [isLoadingBrands, setIsLoadingBrands] = useState(false);
   const [descriptionInput, setDescriptionInput] = useState('');
+  const [uomInput, setUomInput] = useState('');
   const [normalPriceInput, setNormalPriceInput] = useState('');
   const [baseDiscountInput, setBaseDiscountInput] = useState('');
   const [priceCutInput, setPriceCutInput] = useState('');
@@ -63,6 +68,31 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
       clearTimeout(handle);
     };
   }, [skuInput, mode]);
+
+  useEffect(() => {
+    if (mode !== 'custom') return;
+    if (brandOptions.length > 0) return;
+
+    let isActive = true;
+    setIsLoadingBrands(true);
+    fetchBrandSegments()
+      .then((brands) => {
+        if (!isActive) return;
+        setBrandOptions(brands);
+        if (!customBrandInput && brands.length > 0) {
+          setCustomBrandInput(brands[0]);
+        }
+      })
+      .finally(() => {
+        if (isActive) {
+          setIsLoadingBrands(false);
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [brandOptions.length, customBrandInput, mode]);
 
   const handleSearch = async (overrideSku?: string) => {
     const skuValue = normalizeSku(overrideSku ?? skuInput);
@@ -129,7 +159,9 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
   const resetCustomInputs = () => {
     setPriceMode('discount');
     setNameInput('');
+    setCustomBrandInput(brandOptions[0] || '');
     setDescriptionInput('');
+    setUomInput('');
     setNormalPriceInput('');
     setBaseDiscountInput('');
     setPriceCutInput('');
@@ -138,10 +170,16 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
   };
 
   const handleAddCustomProduct = () => {
-    const selectedBrand = findBrand(brands[0]?.id);
-    const brandName = selectedBrand?.name;
-    const brandSlug = brandName ? brandName.toUpperCase().replace(/\s+/g, '_') : undefined;
-    const brandLogoUrl = brandSlug ? `/brands/${brandSlug}.png` : selectedBrand?.logoData;
+    if (!customBrandInput) {
+      toast.error('Brand wajib dipilih');
+      return;
+    }
+
+    const brandName = customBrandInput;
+    const brandSlug = brandName
+      ? brandName.toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_+|_+$/g, '')
+      : undefined;
+    const brandLogoUrl = brandSlug ? `/brands/${brandSlug}.png` : undefined;
 
     if (!nameInput.trim() || !descriptionInput.trim()) {
       toast.error('Nama Produk dan Deskripsi wajib diisi');
@@ -208,13 +246,11 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
     const product: Product = {
       sku: id,
       name: nameInput.trim(),
-      brandId: selectedBrand?.id,
+      brandId: brandSlug,
       brand: brandName,
-      brandLogoText: selectedBrand?.logoText,
       brandLogoUrl,
-      brandColor: selectedBrand?.logoBg,
-      brandTextColor: selectedBrand?.logoTextColor,
       description: descriptionInput.trim(),
+      uom: uomInput.trim() || undefined,
       normalPrice,
       promoPrice,
       discount: discountPercent,
@@ -305,6 +341,28 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
       ) : (
         <>
           <div className="grid grid-cols-1 gap-2">
+            <Select
+              value={customBrandInput}
+              onValueChange={setCustomBrandInput}
+              disabled={isLoadingBrands || brandOptions.length === 0}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={isLoadingBrands ? 'Memuat brand...' : 'Pilih brand'} />
+              </SelectTrigger>
+              <SelectContent>
+                {brandOptions.length === 0 ? (
+                  <SelectItem value="__empty" disabled>
+                    {isLoadingBrands ? 'Memuat brand...' : 'Brand tidak tersedia'}
+                  </SelectItem>
+                ) : (
+                  brandOptions.map((brand) => (
+                    <SelectItem key={brand} value={brand}>
+                      {brand}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
             <Input
               placeholder="Nama Produk"
               value={nameInput}
@@ -314,6 +372,11 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
               placeholder="Deskripsi"
               value={descriptionInput}
               onChange={(e) => setDescriptionInput(e.target.value)}
+            />
+            <Input
+              placeholder="UOM (contoh: Dus, Pcs)"
+              value={uomInput}
+              onChange={(e) => setUomInput(e.target.value)}
             />
             <Input
               placeholder="Harga Normal"

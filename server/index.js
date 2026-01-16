@@ -531,6 +531,33 @@ app.get("/api/products", requireAuth, async (req, res) => {
   }
 });
 
+app.get("/api/brand-segments", requireAuth, async (req, res) => {
+  const site = await getSiteConfig(req.auth?.site_code);
+  if (!site) {
+    res.status(500).json({ error: "Mapping site tidak ditemukan" });
+    return;
+  }
+  const sitePool = getSitePool(site);
+
+  const sql = `
+    SELECT DISTINCT TRIM(segment2) AS name
+    FROM product
+    WHERE segment2 IS NOT NULL AND TRIM(segment2) <> ''
+    ORDER BY segment2 ASC;
+  `;
+
+  try {
+    const [rows] = await sitePool.query(sql);
+    const brands = rows
+      .map((row) => row.name)
+      .filter((name) => Boolean(name));
+    res.json(brands);
+  } catch (error) {
+    console.error("DB error:", error);
+    res.status(500).json({ error: "Gagal memuat brand" });
+  }
+});
+
 const startServer = async () => {
   await ensureStorage();
   app.listen(PORT, () => {

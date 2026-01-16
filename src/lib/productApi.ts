@@ -71,3 +71,19 @@ export const searchProducts = async (search: string): Promise<ProductSuggestion[
     name: item.pd_short_desc,
   }));
 };
+
+export const fetchBrandSegments = async (): Promise<string[]> => {
+  const token = getAuthToken();
+  const response = await fetch("/api/brand-segments", {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+  if (response.status === 401) {
+    handleUnauthorized();
+    return [];
+  }
+  if (!response.ok) {
+    return [];
+  }
+  const data = await response.json();
+  return Array.isArray(data) ? data.filter((item) => typeof item === "string") : [];
+};

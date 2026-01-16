@@ -512,17 +512,17 @@ app.get("/api/products", requireAuth, async (req, res) => {
 
   const sql = `
     SELECT
-      TRIM(pr.pd_code) as pd_code,
+      pr.pd_code as pd_code,
       pr.pd_short_desc
-    FROM rpt_price_tag_v2 pr
-    WHERE (TRIM(pr.pd_code) LIKE ? OR pr.pd_short_desc LIKE ?)
-    ORDER BY pr.pd_code ASC
+    FROM product pr
+    WHERE pr.pd_code LIKE ?
+    ORDER BY (pr.pd_code = ?) DESC, pr.pd_code ASC
     LIMIT 20;
   `;
 
   try {
-    const like = `%${search}%`;
-    const [rows] = await sitePool.query(sql, [like, like]);
+    const likeCode = `${search}%`;
+    const [rows] = await sitePool.query(sql, [likeCode, search]);
     res.json(rows);
   } catch (error) {
     console.error("DB error:", error);

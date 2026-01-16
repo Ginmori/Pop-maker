@@ -515,14 +515,15 @@ app.get("/api/products", requireAuth, async (req, res) => {
       pr.pd_code as pd_code,
       pr.pd_short_desc
     FROM product pr
-    WHERE pr.pd_code LIKE ?
+    WHERE (pr.pd_code LIKE ? OR pr.pd_short_desc LIKE ?)
     ORDER BY (pr.pd_code = ?) DESC, pr.pd_code ASC
     LIMIT 20;
   `;
 
   try {
     const likeCode = `${search}%`;
-    const [rows] = await sitePool.query(sql, [likeCode, search]);
+    const likeName = `%${search}%`;
+    const [rows] = await sitePool.query(sql, [likeCode, likeName, search]);
     res.json(rows);
   } catch (error) {
     console.error("DB error:", error);

@@ -20,6 +20,8 @@ export interface Product {
   extraDiscount?: number;
   memberDiscount?: number;
   uom?: string;
+  basePricePerMeter?: number;
+  finalPricePerMeter?: number;
   isCustom?: boolean;
 }
 

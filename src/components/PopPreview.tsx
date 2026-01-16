@@ -203,11 +203,18 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
 
     // Discount badge removed (center)
 
-    // Strike Price (Normal) first
-    if (settings.showStrikePrice) {
-      const strikeFontSize = (settings.layout === '4' ? 14 : settings.layout === '2' ? 16 : 18) * groupScale;
-      const strikeText = new FabricText(`Rp ${formatPrice(product.normalPrice)}`, {
-        left: centerX,
+    const priceSize = (settings.layout === '4' ? 44 : settings.layout === '2' ? 56 : 72) * groupScale;
+    const graniteLabel = `${product.descSegment || ''} ${product.description || ''}`.toUpperCase();
+    const isGranite = graniteLabel.includes('GRANIT');
+    const meterBase = Number(product.basePricePerMeter);
+    const meterFinal = Number(product.finalPricePerMeter);
+    const hasMeterPrice = Number.isFinite(meterFinal) && Number.isFinite(meterBase);
+
+    const renderStrikePrice = (price: number, uomLabel: string | undefined, alignX: number, scale = 1) => {
+      if (!settings.showStrikePrice || !price) return 0;
+      const strikeFontSize = (settings.layout === '4' ? 14 : settings.layout === '2' ? 16 : 18) * groupScale * scale;
+      const strikeText = new FabricText(`Rp ${formatPrice(price)}`, {
+        left: alignX,
         top: currentY,
         fontSize: strikeFontSize,
         fontFamily: 'Inter, sans-serif',
@@ -217,9 +224,9 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
       });
       objects.push(strikeText);
       const strikeWidth = strikeText.getScaledWidth?.() ?? strikeText.width ?? 0;
-      if (product.uom) {
-        objects.push(new FabricText(`/${product.uom}`, {
-          left: centerX + strikeWidth / 2 + 6 * groupScale,
+      if (uomLabel) {
+        objects.push(new FabricText(`/${uomLabel}`, {
+          left: alignX + strikeWidth / 2 + 6 * groupScale,
           top: currentY + strikeFontSize * 0.1,
           fontSize: Math.max(10, strikeFontSize * 0.7),
           fontFamily: 'Inter, sans-serif',
@@ -230,103 +237,124 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
         }));
       }
 
-      const textWidth = strikeFontSize * product.normalPrice.toString().length * 0.6 + 30;
-      objects.push(new Line([centerX - textWidth / 2, currentY + strikeFontSize / 2, centerX + textWidth / 2, currentY + strikeFontSize / 2], {
+      const lineWidth = strikeWidth + (uomLabel ? 18 * groupScale * scale : 0);
+      objects.push(new Line([alignX - lineWidth / 2, currentY + strikeFontSize / 2, alignX + lineWidth / 2, currentY + strikeFontSize / 2], {
         stroke: '#dc2626',
         strokeWidth: 2,
       }));
-      currentY += strikeFontSize + 10 * groupScale;
-    }
+      return strikeFontSize + 10 * groupScale;
+    };
 
-    // Final Price (besar)
-    const priceSize = (settings.layout === '4' ? 44 : settings.layout === '2' ? 56 : 72) * groupScale;
-    const formattedPrice = formatPrice(product.promoPrice);
-    const splitIndex = formattedPrice.lastIndexOf('.');
-    const mainPrice = splitIndex > -1 ? formattedPrice.slice(0, splitIndex) : formattedPrice;
-    const tailDigits = splitIndex > -1 ? formattedPrice.slice(splitIndex + 1) : '';
+    const renderPriceBlock = (price: number, uomLabel: string | undefined, alignX: number, topY: number, scale = 1) => {
+      const localPriceSize = priceSize * scale;
+      const localCurrencySize = Math.max(12, localPriceSize * 0.4);
+      const formattedPrice = formatPrice(price);
+      const splitIndex = formattedPrice.lastIndexOf('.');
+      const mainPrice = splitIndex > -1 ? formattedPrice.slice(0, splitIndex) : formattedPrice;
+      const tailDigits = splitIndex > -1 ? formattedPrice.slice(splitIndex + 1) : '';
 
-    const currencySize = Math.max(12, priceSize * 0.4);
-    const currencyText = new FabricText('Rp.', {
-      left: centerX,
-      top: currentY + priceSize * 0.12,
-      fontSize: currencySize,
-      fontFamily: 'Inter, sans-serif',
-      fontWeight: '700',
-      fill: '#1f2937',
-      originX: 'left',
-      originY: 'top',
-    });
-    const currencyWidth = currencyText.getScaledWidth?.() ?? currencyText.width ?? 0;
-
-    const promoText = new FabricText(mainPrice, {
-      left: centerX,
-      top: currentY,
-      fontSize: priceSize,
-      fontFamily: 'Inter, sans-serif',
-      fontWeight: '900',
-      fill: '#1f2937',
-      originX: 'left',
-      originY: 'top',
-    });
-    const promoWidth = promoText.getScaledWidth?.() ?? promoText.width ?? 0;
-
-    let tailTop = currentY;
-    let tailHeight = 0;
-    let tailWidth = 0;
-    let tailText: FabricText | null = null;
-    if (tailDigits) {
-      const tailSize = Math.max(10, priceSize * 0.35);
-      tailText = new FabricText(`.${tailDigits}`, {
-        left: centerX,
-        top: currentY + priceSize * 0.08,
-        fontSize: tailSize,
+      const currencyText = new FabricText('Rp.', {
+        left: alignX,
+        top: topY + localPriceSize * 0.12,
+        fontSize: localCurrencySize,
         fontFamily: 'Inter, sans-serif',
-        fontWeight: '800',
+        fontWeight: '700',
         fill: '#1f2937',
         originX: 'left',
         originY: 'top',
       });
-      tailTop = tailText.top ?? tailTop;
-      tailHeight = tailText.getScaledHeight?.() ?? tailText.height ?? tailSize;
-      tailWidth = tailText.getScaledWidth?.() ?? tailText.width ?? 0;
-    }
+      const currencyWidth = currencyText.getScaledWidth?.() ?? currencyText.width ?? 0;
 
-    const gapMain = 6 * groupScale;
-    const gapTail = tailDigits ? 4 * groupScale : 0;
-    const totalWidth = currencyWidth + gapMain + promoWidth + gapTail + (tailDigits ? tailWidth : 0);
-    const startX = centerX - totalWidth / 2;
-
-    currencyText.set({ left: startX });
-    promoText.set({ left: startX + currencyWidth + gapMain });
-    if (tailText) {
-      tailText.set({ left: startX + currencyWidth + gapMain + promoWidth + gapTail });
-    }
-
-    objects.push(currencyText);
-    objects.push(promoText);
-    if (tailText) {
-      objects.push(tailText);
-    }
-
-    if (product.uom) {
-      const uomSize = Math.max(10, priceSize * 0.22);
-      const uomLeft = startX + currencyWidth + gapMain + promoWidth + gapTail;
-      const uomTop = tailDigits ? tailTop + tailHeight + 1 * groupScale : currentY + priceSize * 0.35;
-      objects.push(new FabricText(`/${product.uom}`, {
-        left: uomLeft,
-        top: uomTop,
-        fontSize: uomSize,
+      const promoText = new FabricText(mainPrice, {
+        left: alignX,
+        top: topY,
+        fontSize: localPriceSize,
         fontFamily: 'Inter, sans-serif',
-        fontWeight: '600',
+        fontWeight: '900',
         fill: '#1f2937',
         originX: 'left',
         originY: 'top',
-      }));
-    }
+      });
+      const promoWidth = promoText.getScaledWidth?.() ?? promoText.width ?? 0;
 
-    const promoHeight = promoText.getScaledHeight?.() ?? promoText.height ?? priceSize;
-    const extraHeight = Math.max(promoHeight, tailTop - currentY + tailHeight);
-    currentY += extraHeight + 10 * groupScale;
+      let tailTop = topY;
+      let tailHeight = 0;
+      let tailWidth = 0;
+      let tailText: FabricText | null = null;
+      if (tailDigits) {
+        const tailSize = Math.max(10, localPriceSize * 0.35);
+        tailText = new FabricText(`.${tailDigits}`, {
+          left: alignX,
+          top: topY + localPriceSize * 0.08,
+          fontSize: tailSize,
+          fontFamily: 'Inter, sans-serif',
+          fontWeight: '800',
+          fill: '#1f2937',
+          originX: 'left',
+          originY: 'top',
+        });
+        tailTop = tailText.top ?? tailTop;
+        tailHeight = tailText.getScaledHeight?.() ?? tailText.height ?? tailSize;
+        tailWidth = tailText.getScaledWidth?.() ?? tailText.width ?? 0;
+      }
+
+      const gapMain = 6 * groupScale;
+      const gapTail = tailDigits ? 4 * groupScale : 0;
+      const totalWidth = currencyWidth + gapMain + promoWidth + gapTail + (tailDigits ? tailWidth : 0);
+      const startX = alignX - totalWidth / 2;
+
+      currencyText.set({ left: startX });
+      promoText.set({ left: startX + currencyWidth + gapMain });
+      if (tailText) {
+        tailText.set({ left: startX + currencyWidth + gapMain + promoWidth + gapTail });
+      }
+
+      objects.push(currencyText);
+      objects.push(promoText);
+      if (tailText) {
+        objects.push(tailText);
+      }
+
+      if (uomLabel) {
+        const uomSize = Math.max(10, localPriceSize * 0.22);
+        const uomLeft = startX + currencyWidth + gapMain + promoWidth + gapTail;
+        const uomTop = tailDigits ? tailTop + tailHeight + 1 * groupScale : topY + localPriceSize * 0.35;
+        objects.push(new FabricText(`/${uomLabel}`, {
+          left: uomLeft,
+          top: uomTop,
+          fontSize: uomSize,
+          fontFamily: 'Inter, sans-serif',
+          fontWeight: '600',
+          fill: '#1f2937',
+          originX: 'left',
+          originY: 'top',
+        }));
+      }
+
+      const promoHeight = promoText.getScaledHeight?.() ?? promoText.height ?? localPriceSize;
+      return Math.max(promoHeight, tailTop - topY + tailHeight);
+    };
+
+    if (isGranite && hasMeterPrice) {
+      const graniteScale = settings.layout === '4' ? 0.72 : settings.layout === '2' ? 0.78 : 0.82;
+      const columnGap = Math.max(24 * groupScale, contentWidth * 0.08);
+      const columnWidth = (contentWidth - columnGap) / 2;
+      const leftCenter = centerX - (columnWidth / 2 + columnGap / 2);
+      const rightCenter = centerX + (columnWidth / 2 + columnGap / 2);
+      const leftStrikeHeight = renderStrikePrice(product.normalPrice, product.uom, leftCenter, graniteScale);
+      const rightStrikeHeight = renderStrikePrice(meterBase, 'Mtr', rightCenter, graniteScale);
+      currentY += Math.max(leftStrikeHeight, rightStrikeHeight);
+
+      const leftHeight = renderPriceBlock(product.promoPrice, product.uom, leftCenter, currentY, graniteScale);
+      const rightHeight = renderPriceBlock(meterFinal, 'Mtr', rightCenter, currentY, graniteScale);
+      currentY += Math.max(leftHeight, rightHeight) + 10 * groupScale;
+    } else {
+      const strikeHeight = renderStrikePrice(product.normalPrice, product.uom, centerX);
+      currentY += strikeHeight;
+
+      const promoHeight = renderPriceBlock(product.promoPrice, product.uom, centerX, currentY);
+      currentY += promoHeight + 10 * groupScale;
+    }
 
     // Bottom discount badge (percent only)
     const totalDiscount = product.discount ?? 0;

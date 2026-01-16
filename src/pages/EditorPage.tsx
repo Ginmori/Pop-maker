@@ -325,11 +325,11 @@ const EditorPage = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="h-14 bg-card border-b border-border flex items-center justify-between px-6 shrink-0">
-        <h1 className="text-lg font-bold text-foreground">POP Maker - Mitra Bangunan Supermarket</h1>
+      <header className="h-14 bg-sky-500 border-b border-sky-600 flex items-center justify-between px-6 shrink-0">
+        <h1 className="text-lg font-bold text-white">POP Maker - Mitra Bangunan Supermarket v1.0.9</h1>
 
         <div className="flex items-center gap-4">
-          <button className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <button className="flex items-center gap-1.5 text-sm text-white/90 hover:text-white transition-colors">
             <Globe className="w-4 h-4" />
             <span>Bahasa:</span>
             <span className="font-medium">ID</span>
@@ -342,8 +342,8 @@ const EditorPage = () => {
             />
           ) : null}
 
-          <button className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-            <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+          <button className="flex items-center gap-2 text-sm text-white/90 hover:text-white transition-colors">
+            <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
               <User className="w-4 h-4" />
             </div>
             <span>{userLabel}</span>
@@ -352,7 +352,7 @@ const EditorPage = () => {
 
           <button
             onClick={handleLogout}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            className="text-sm text-white/90 hover:text-white transition-colors"
           >
             Logout
           </button>

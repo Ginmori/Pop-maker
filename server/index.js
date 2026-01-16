@@ -334,7 +334,7 @@ app.post("/api/login", loginLimiter, async (req, res) => {
     const token = jwt.sign(
       { user_id: user.id, site_code: user.site_code, site_user: user.site_user },
       process.env.JWT_SECRET,
-      { expiresIn: "8h" }
+      { expiresIn: "30d" }
     );
 
     res.json({

@@ -11,10 +11,12 @@ interface SKUFormProps {
   products: Product[];
   onAddProduct: (product: Product) => void;
   onRemoveProduct: (sku: string) => void;
+  onSelectProduct?: (sku: string) => void;
+  activeSku?: string;
   brands: Brand[];
 }
 
-export const SKUForm = ({ products, onAddProduct, onRemoveProduct, brands }: SKUFormProps) => {
+export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProduct, activeSku, brands }: SKUFormProps) => {
   const [mode, setMode] = useState<'sku' | 'custom'>('sku');
   const [skuInput, setSkuInput] = useState('');
   const [skuSuggestions, setSkuSuggestions] = useState<ProductSuggestion[]>([]);
@@ -382,8 +384,23 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, brands }: SKU
 
       {/* Product List */}
       <div className="space-y-2">
-        {products.map((product) => (
-          <div key={product.sku} className="product-card animate-fade-in">
+        {products.map((product) => {
+          const isActive = activeSku === product.sku;
+          return (
+          <div
+            key={product.sku}
+            className={`product-card animate-fade-in transition-colors ${onSelectProduct ? 'cursor-pointer hover:border-primary/60' : ''} ${isActive ? 'border-primary/70 ring-2 ring-primary/20' : ''}`}
+            onClick={() => onSelectProduct?.(product.sku)}
+            onKeyDown={(event) => {
+              if (!onSelectProduct) return;
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                onSelectProduct(product.sku);
+              }
+            }}
+            role={onSelectProduct ? 'button' : undefined}
+            tabIndex={onSelectProduct ? 0 : undefined}
+          >
             <div className="flex items-start justify-between">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
@@ -409,14 +426,18 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, brands }: SKU
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => onRemoveProduct(product.sku)}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onRemoveProduct(product.sku);
+                }}
                 className="text-muted-foreground hover:text-destructive"
               >
                 <Trash2 className="w-4 h-4" />
               </Button>
             </div>
           </div>
-        ))}
+        );
+        })}
       </div>
 
       {/* Add Bulk Button 

@@ -11,6 +11,8 @@ interface PopPreviewProps {
   selectedTemplateData: Template;
   previewScale: number;
   onScaleChange: (scale: number) => void;
+  activeIndex?: number;
+  onActiveIndexChange?: (index: number) => void;
 }
 
 export interface PopPreviewHandle {
@@ -30,6 +32,8 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
   selectedTemplateData,
   previewScale,
   onScaleChange,
+  activeIndex,
+  onActiveIndexChange,
 }, ref) => {
   const zoomIn = () => onScaleChange(Math.min(previewScale + 0.25, 2));
   const zoomOut = () => onScaleChange(Math.max(previewScale - 0.25, 0.5));
@@ -464,13 +468,22 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
   }, [drawBarcode]);
 
   const totalPages = Math.max(products.length, 1);
-  const [currentPage, setCurrentPage] = useState(0);
+  const [internalPage, setInternalPage] = useState(0);
+  const currentPage = activeIndex ?? internalPage;
+  const setPage = useCallback((nextPage: number) => {
+    const clamped = Math.max(0, Math.min(totalPages - 1, nextPage));
+    if (onActiveIndexChange) {
+      onActiveIndexChange(clamped);
+    } else {
+      setInternalPage(clamped);
+    }
+  }, [onActiveIndexChange, totalPages]);
 
   useEffect(() => {
     if (currentPage > totalPages - 1) {
-      setCurrentPage(Math.max(0, totalPages - 1));
+      setPage(Math.max(0, totalPages - 1));
     }
-  }, [currentPage, totalPages]);
+  }, [currentPage, setPage, totalPages]);
 
   const renderPageCanvas = useCallback(async (
     canvas: FabricCanvas,
@@ -572,18 +585,18 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
             <div className="flex items-center gap-2 text-sm">
               <button
                 className="px-3 py-1 rounded border border-border disabled:opacity-50"
-                onClick={() => setCurrentPage((prev) => Math.max(0, prev - 1))}
-                disabled={currentPage === 0}
-              >
-                Prev
-              </button>
-              <button
-                className="px-3 py-1 rounded border border-border disabled:opacity-50"
-                onClick={() => setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1))}
-                disabled={currentPage >= totalPages - 1}
-              >
-                Next
-              </button>
+              onClick={() => setPage(currentPage - 1)}
+              disabled={currentPage === 0}
+            >
+              Prev
+            </button>
+            <button
+              className="px-3 py-1 rounded border border-border disabled:opacity-50"
+              onClick={() => setPage(currentPage + 1)}
+              disabled={currentPage >= totalPages - 1}
+            >
+              Next
+            </button>
             </div>
           ) : null}
         </div>

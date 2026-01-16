@@ -59,8 +59,9 @@ const EditorPage = () => {
     }
   );
   const [products, setProducts] = useState<Product[]>([]);
+  const [activeIndex, setActiveIndex] = useState(0);
   const [brandList, setBrandList] = useState<Brand[]>(defaultBrands);
-  const [previewScale, setPreviewScale] = useState(0.75);
+  const [previewScale, setPreviewScale] = useState(1);
   const previewRef = useRef<HTMLDivElement>(null);
   const popPreviewRef = useRef<PopPreviewHandle>(null);
   const popSettings = {
@@ -89,6 +90,12 @@ const EditorPage = () => {
   useEffect(() => {
     setProducts([]);
   }, []);
+
+  useEffect(() => {
+    if (activeIndex > products.length - 1) {
+      setActiveIndex(Math.max(0, products.length - 1));
+    }
+  }, [activeIndex, products.length]);
 
   useEffect(() => {
     let isActive = true;
@@ -211,6 +218,13 @@ const EditorPage = () => {
   const handleRemoveProduct = useCallback((sku: string) => {
     setProducts((prev) => prev.filter((p) => p.sku !== sku));
   }, []);
+
+  const handleSelectProduct = useCallback((sku: string) => {
+    const index = products.findIndex((product) => product.sku === sku);
+    if (index >= 0) {
+      setActiveIndex(index);
+    }
+  }, [products]);
 
   const handleGeneratePreview = useCallback(() => {
     toast.success('Preview diperbarui!');
@@ -363,6 +377,8 @@ const EditorPage = () => {
               products={products}
               onAddProduct={handleAddProduct}
               onRemoveProduct={handleRemoveProduct}
+              onSelectProduct={handleSelectProduct}
+              activeSku={products[activeIndex]?.sku}
               brands={brandList}
             />
 
@@ -385,6 +401,8 @@ const EditorPage = () => {
             selectedTemplateData={selectedTemplateData}
             previewScale={previewScale}
             onScaleChange={setPreviewScale}
+            activeIndex={activeIndex}
+            onActiveIndexChange={setActiveIndex}
             ref={popPreviewRef}
           />
         </main>

@@ -71,11 +71,11 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
   ): Promise<Group> => {
     const objects: (Rect | FabricText | Line | Group | FabricImage | Circle)[] = [];
     const centerX = x + itemWidth / 2;
-    const baseScale = 1.01;
-    const groupScale = (settings.layout === '4' ? 1.06 : settings.layout === '2' ? 1.1 : 1.15) * baseScale;
+    const baseScale = 1.05;
+    const groupScale = (settings.layout === '4' ? 1.1 : settings.layout === '2' ? 1.16 : 1.22) * baseScale;
     const startY = y + itemHeight * 0.3;
     let currentY = startY;
-    const contentWidth = itemWidth * (settings.layout === '4' ? 0.74 : 0.8);
+    const contentWidth = itemWidth * (settings.layout === '4' ? 0.74 : settings.layout === '2' ? 0.84 : 0.88);
     const fitTextToLines = (text: string, maxLines: number, box: Textbox, baseSize: number) => {
       const measureLines = () =>
         (box.textLines ?? (box as { _textLines?: string[] })._textLines ?? []).length;
@@ -139,7 +139,7 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
       originX: 'center',
       originY: 'top',
     });
-    fitTextToLines(product.name, 2, nameBox, nameSize);
+    fitTextToLines(product.name, 1, nameBox, nameSize);
     objects.push(nameBox);
     const nameHeight = Math.max(nameSize, nameBox.getScaledHeight?.() ?? nameBox.height ?? nameSize);
     currentY += nameHeight + 6 * groupScale;
@@ -310,8 +310,8 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
     };
 
     if (isGranite && hasMeterPrice) {
-      const graniteScale = settings.layout === '4' ? 0.72 : settings.layout === '2' ? 0.78 : 0.82;
-      const columnGap = Math.max(24 * groupScale, contentWidth * 0.08);
+      const graniteScale = settings.layout === '4' ? 0.68 : settings.layout === '2' ? 0.72 : 0.74;
+      const columnGap = Math.max(36 * groupScale, contentWidth * 0.18);
       const columnWidth = (contentWidth - columnGap) / 2;
       const leftCenter = centerX - (columnWidth / 2 + columnGap / 2);
       const rightCenter = centerX + (columnWidth / 2 + columnGap / 2);

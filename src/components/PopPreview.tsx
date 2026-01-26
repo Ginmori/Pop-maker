@@ -332,12 +332,11 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
     }
 
     // Bottom discount badge (percent only)
-    const totalDiscount = product.discount ?? 0;
+    const baseDiscount = product.discount ?? 0;
     const extraRaw = product.extraDiscount ?? 0;
     const memberRaw = product.memberDiscount ?? 0;
-    if (product.discountType !== 'cut' && (totalDiscount > 0 || extraRaw > 0 || memberRaw > 0)) {
-      const baseRaw = totalDiscount - extraRaw - memberRaw;
-      const baseValue = Math.round(baseRaw);
+    if (product.discountType !== 'cut' && (baseDiscount > 0 || extraRaw > 0 || memberRaw > 0)) {
+      const baseValue = Math.round(baseDiscount);
       const extra = Math.round(extraRaw);
       const member = Math.round(memberRaw);
       const items = [

@@ -31,6 +31,7 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
   const [descriptionInput, setDescriptionInput] = useState('');
   const [uomInput, setUomInput] = useState('');
   const [normalPriceInput, setNormalPriceInput] = useState('');
+  const [finalPriceInput, setFinalPriceInput] = useState('');
   const [baseDiscountInput, setBaseDiscountInput] = useState('');
   const [priceCutInput, setPriceCutInput] = useState('');
   const [extraDiscountInput, setExtraDiscountInput] = useState('');
@@ -163,6 +164,7 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
     setDescriptionInput('');
     setUomInput('');
     setNormalPriceInput('');
+    setFinalPriceInput('');
     setBaseDiscountInput('');
     setPriceCutInput('');
     setExtraDiscountInput('');
@@ -186,13 +188,19 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
       return;
     }
 
-    const normalPrice = Number(normalPriceInput);
-    if (!Number.isFinite(normalPrice) || normalPrice <= 0) {
+    const normalPrice = normalPriceInput ? Number(normalPriceInput) : 0;
+    if (normalPriceInput && (!Number.isFinite(normalPrice) || normalPrice <= 0)) {
       toast.error('Harga normal tidak valid');
       return;
     }
 
-    let promoPrice = normalPrice;
+    const finalPrice = finalPriceInput ? Number(finalPriceInput) : normalPrice;
+    if (!Number.isFinite(finalPrice) || finalPrice <= 0) {
+      toast.error('Harga final tidak valid');
+      return;
+    }
+
+    let promoPrice = finalPrice;
     let discountPercent = 0;
     let extraDiscount = 0;
     let memberDiscount = 0;
@@ -200,11 +208,11 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
     let discountAmount: number | undefined;
 
     if (priceMode === 'discount') {
-      const baseDiscount = Number(baseDiscountInput);
+      const baseDiscount = baseDiscountInput ? Number(baseDiscountInput) : 0;
       extraDiscount = extraDiscountInput ? Number(extraDiscountInput) : 0;
       memberDiscount = memberDiscountInput ? Number(memberDiscountInput) : 0;
 
-      if (!Number.isFinite(baseDiscount) || baseDiscount <= 0) {
+      if (!Number.isFinite(baseDiscount) || baseDiscount < 0) {
         toast.error('Diskon utama tidak valid');
         return;
       }
@@ -217,28 +225,24 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
         return;
       }
 
-      discountPercent = baseDiscount + extraDiscount + memberDiscount;
-      if (discountPercent >= 100) {
-        toast.error('Total diskon tidak boleh 100% atau lebih');
-        return;
-      }
-      promoPrice = Math.max(0, Math.round(normalPrice * (1 - discountPercent / 100)));
+      discountPercent = baseDiscount;
+      promoPrice = finalPrice;
     } else {
-      const priceCut = Number(priceCutInput);
-      if (!Number.isFinite(priceCut) || priceCut <= 0) {
+      const priceCut = priceCutInput ? Number(priceCutInput) : 0;
+      if (priceCutInput && (!Number.isFinite(priceCut) || priceCut <= 0)) {
         toast.error('Potongan harga tidak valid');
         return;
       }
-      if (priceCut >= normalPrice) {
+      if (priceCut > 0 && normalPrice > 0 && priceCut >= normalPrice) {
         toast.error('Potongan harga tidak boleh melebihi harga normal');
         return;
       }
-      promoPrice = normalPrice - priceCut;
-      discountPercent = Math.round((priceCut / normalPrice) * 100);
+      promoPrice = finalPrice;
+      discountPercent = priceCut > 0 && normalPrice > 0 ? Math.round((priceCut / normalPrice) * 100) : 0;
       extraDiscount = 0;
       memberDiscount = 0;
       discountType = 'cut';
-      discountAmount = priceCut;
+      discountAmount = priceCut > 0 ? priceCut : undefined;
     }
 
     const id = `CUSTOM-${Date.now()}`;
@@ -384,6 +388,13 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
               min="0"
               value={normalPriceInput}
               onChange={(e) => setNormalPriceInput(e.target.value)}
+            />
+            <Input
+              placeholder="Harga Final"
+              type="number"
+              min="0"
+              value={finalPriceInput}
+              onChange={(e) => setFinalPriceInput(e.target.value)}
             />
 
             {/* Price Mode Selector */}

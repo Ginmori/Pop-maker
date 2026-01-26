@@ -1,5 +1,13 @@
 [
   {
+    "id": "tpl-ad21008f-e890-480a-ac60-b386d15dec26",
+    "name": "Spesial",
+    "description": "Custom template",
+    "imageUrl": "/uploads/templates/tpl-ad21008f-e890-480a-ac60-b386d15dec26.png",
+    "uploadedAt": 1769392337346,
+    "type": "custom"
+  },
+  {
     "id": "tpl-0ee32f06-7385-49be-9e19-34ced16e9edd",
     "name": "Promo",
     "description": "Custom template",
@@ -13,14 +21,6 @@
     "description": "Custom template",
     "imageUrl": "/uploads/templates/tpl-ebeac0bd-b88d-4e7b-8478-8f7fb4873d95.png",
     "uploadedAt": 1769390094805,
-    "type": "custom"
-  },
-  {
-    "id": "tpl-8d26f6bf-c54a-42b8-9c15-f748a493cfb3",
-    "name": "Harga Spesial",
-    "description": "Custom template",
-    "imageUrl": "/uploads/templates/tpl-8d26f6bf-c54a-42b8-9c15-f748a493cfb3.png",
-    "uploadedAt": 1769390085045,
     "type": "custom"
   }
 ]

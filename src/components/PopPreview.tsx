@@ -331,11 +331,71 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
       currentY += promoHeight + 10 * groupScale;
     }
 
-    // Bottom discount badge (percent only)
+    // Bottom discount badge
     const baseDiscount = product.discount ?? 0;
     const extraRaw = product.extraDiscount ?? 0;
     const memberRaw = product.memberDiscount ?? 0;
-    if (product.discountType !== 'cut' && (baseDiscount > 0 || extraRaw > 0 || memberRaw > 0)) {
+    const discountAmount = product.discountAmount ?? 0;
+    if (product.discountType === 'cut' && discountAmount > 0) {
+      const rowWidth = contentWidth * 0.6;
+      const rowHeight = (settings.layout === '4' ? 70 : settings.layout === '2' ? 84 : 96) * groupScale;
+      const rowY = currentY + 6 * groupScale;
+      const headerHeight = rowHeight * 0.42;
+      const radius = 16 * groupScale;
+
+      objects.push(new Rect({
+        left: centerX - rowWidth / 2,
+        top: rowY,
+        width: rowWidth,
+        height: rowHeight,
+        fill: '#f8fafc',
+        stroke: '#d1d5db',
+        strokeWidth: 1,
+        rx: radius,
+        ry: radius,
+        shadow: { color: 'rgba(15, 23, 42, 0.15)', blur: 6, offsetX: 0, offsetY: 2 },
+      }));
+
+      const gradient = new Gradient({
+        type: 'linear',
+        coords: { x1: centerX - rowWidth / 2, y1: rowY, x2: centerX + rowWidth / 2, y2: rowY },
+        colorStops: [
+          { offset: 0, color: '#ef4444' },
+          { offset: 1, color: '#ef4444' },
+        ],
+      });
+
+      objects.push(new Rect({
+        left: centerX - rowWidth / 2,
+        top: rowY,
+        width: rowWidth,
+        height: headerHeight,
+        fill: gradient,
+        rx: radius,
+        ry: radius,
+      }));
+
+      objects.push(new FabricText('POTONGAN', {
+        left: centerX,
+        top: rowY + headerHeight * 0.5,
+        fontSize: (settings.layout === '4' ? 12 : settings.layout === '2' ? 13 : 14) * groupScale,
+        fontFamily: 'Inter, sans-serif',
+        fontWeight: '800',
+        fill: '#ffffff',
+        originX: 'center',
+        originY: 'center',
+      }));
+      objects.push(new FabricText(`Rp ${formatPrice(discountAmount)}`, {
+        left: centerX,
+        top: rowY + headerHeight + (rowHeight - headerHeight) * 0.62,
+        fontSize: (settings.layout === '4' ? 26 : settings.layout === '2' ? 31 : 38) * groupScale,
+        fontFamily: 'Inter, sans-serif',
+        fontWeight: '800',
+        fill: '#4b5563',
+        originX: 'center',
+        originY: 'center',
+      }));
+    } else if (product.discountType !== 'cut' && (baseDiscount > 0 || extraRaw > 0 || memberRaw > 0)) {
       const baseValue = Math.round(baseDiscount);
       const extra = Math.round(extraRaw);
       const member = Math.round(memberRaw);

@@ -1,26 +1,34 @@
 [
   {
-    "id": "tpl-ad21008f-e890-480a-ac60-b386d15dec26",
-    "name": "Spesial",
+    "id": "tpl-0a98bf56-006b-4456-b61c-56337bfac0b1",
+    "name": "Harga Spesial",
     "description": "Custom template",
-    "imageUrl": "/uploads/templates/tpl-ad21008f-e890-480a-ac60-b386d15dec26.png",
-    "uploadedAt": 1769392337346,
+    "imageUrl": "/uploads/templates/tpl-0a98bf56-006b-4456-b61c-56337bfac0b1.png",
+    "uploadedAt": 1769398805321,
     "type": "custom"
   },
   {
-    "id": "tpl-0ee32f06-7385-49be-9e19-34ced16e9edd",
+    "id": "tpl-a8aaed0b-caee-498c-a5b3-42275d5bfeb7",
     "name": "Promo",
     "description": "Custom template",
-    "imageUrl": "/uploads/templates/tpl-0ee32f06-7385-49be-9e19-34ced16e9edd.png",
-    "uploadedAt": 1769390104249,
+    "imageUrl": "/uploads/templates/tpl-a8aaed0b-caee-498c-a5b3-42275d5bfeb7.png",
+    "uploadedAt": 1769398796107,
     "type": "custom"
   },
   {
-    "id": "tpl-ebeac0bd-b88d-4e7b-8478-8f7fb4873d95",
+    "id": "tpl-7bf93b29-a786-46cf-82d6-b9846b5df587",
+    "name": "Harga Khusus",
+    "description": "Custom template",
+    "imageUrl": "/uploads/templates/tpl-7bf93b29-a786-46cf-82d6-b9846b5df587.png",
+    "uploadedAt": 1769398789063,
+    "type": "custom"
+  },
+  {
+    "id": "tpl-c183dce9-0c6b-4c49-9893-3a7974546de2",
     "name": "Diskon Spesial",
     "description": "Custom template",
-    "imageUrl": "/uploads/templates/tpl-ebeac0bd-b88d-4e7b-8478-8f7fb4873d95.png",
-    "uploadedAt": 1769390094805,
+    "imageUrl": "/uploads/templates/tpl-c183dce9-0c6b-4c49-9893-3a7974546de2.png",
+    "uploadedAt": 1769398780724,
     "type": "custom"
   }
 ]

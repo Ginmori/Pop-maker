@@ -208,6 +208,11 @@ const buildProductResponse = (row) => {
   if (totalDiscount <= 0 && basePrice > 0 && finalPrice > 0 && finalPrice < basePrice) {
     totalDiscount = Math.round(((basePrice - finalPrice) / basePrice) * 100 * 100) / 100;
   }
+  const memberMultiplier = memberDiscount > 0 ? (1 - memberDiscount / 100) : 1;
+  const adjustedFinalPrice = finalPrice > 0 ? Math.round(finalPrice * memberMultiplier) : finalPrice;
+  const finalPricePerMeter = toNumber(row.final_price_per_meter ?? row.finalPricePerMeter);
+  const adjustedFinalPricePerMeter =
+    finalPricePerMeter > 0 ? Math.round(finalPricePerMeter * memberMultiplier) : finalPricePerMeter;
 
   return {
     sku,
@@ -215,7 +220,7 @@ const buildProductResponse = (row) => {
     description,
     barcode: row.barcode ?? row.barcode1,
     normalPrice: basePrice,
-    promoPrice: finalPrice || basePrice,
+    promoPrice: adjustedFinalPrice || basePrice,
     discount: Math.round(baseDiscount * 100) / 100,
     extraDiscount: Math.round(extraDiscount * 100) / 100 || undefined,
     disc2: Math.round(disc2 * 100) / 100 || undefined,
@@ -227,7 +232,7 @@ const buildProductResponse = (row) => {
     size: row.size ?? undefined,
     uom: row.uom ?? undefined,
     basePricePerMeter: row.base_price_per_meter ?? undefined,
-    finalPricePerMeter: row.final_price_per_meter ?? undefined,
+    finalPricePerMeter: adjustedFinalPricePerMeter || undefined,
     consignment: row.co ?? undefined,
   };
 };

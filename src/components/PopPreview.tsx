@@ -208,7 +208,7 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
 
     const renderStrikePrice = (price: number, uomLabel: string | undefined, alignX: number, scale = 1) => {
       if (!settings.showStrikePrice || !price) return 0;
-      const strikeFontSize = (settings.layout === '4' ? 14 : settings.layout === '2' ? 16 : 18) * groupScale * scale;
+      const strikeFontSize = (settings.layout === '4' ? 18 : settings.layout === '2' ? 20 : 22) * groupScale * scale;
       const strikeText = new FabricText(`Rp ${formatPrice(price)}`, {
         left: alignX,
         top: currentY,
@@ -387,13 +387,14 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
     };
 
     if (isGranite && hasMeterPrice) {
-      const graniteScale = settings.layout === '4' ? 0.68 : settings.layout === '2' ? 0.72 : 0.74;
-      const columnGap = Math.max(36 * groupScale, contentWidth * 0.18);
+      const graniteScale = settings.layout === '4' ? 1 : settings.layout === '2' ? 1.06 : 1.12;
+      const columnGap = Math.max(20 * groupScale, contentWidth * 0.1);
       const columnWidth = (contentWidth - columnGap) / 2;
       const leftCenter = centerX - (columnWidth / 2 + columnGap / 2);
       const rightCenter = centerX + (columnWidth / 2 + columnGap / 2);
-      const leftStrikeHeight = renderStrikePrice(product.normalPrice, product.uom, leftCenter, graniteScale);
-      const rightStrikeHeight = renderStrikePrice(meterBase, 'Mtr', rightCenter, graniteScale);
+      const strikeScale = graniteScale * 0.9;
+      const leftStrikeHeight = renderStrikePrice(product.normalPrice, product.uom, leftCenter, strikeScale);
+      const rightStrikeHeight = renderStrikePrice(meterBase, 'Mtr', rightCenter, strikeScale);
       currentY += Math.max(leftStrikeHeight, rightStrikeHeight);
 
       const leftHeight = renderPriceBlock(product.promoPrice, product.uom, leftCenter, currentY, graniteScale, columnWidth);

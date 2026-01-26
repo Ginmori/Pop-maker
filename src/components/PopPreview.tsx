@@ -154,6 +154,8 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
     const discountAmount = product.discountAmount ?? 0;
     const hasAnyDiscount =
       baseDiscount > 0 || disc2Raw > 0 || disc3Raw > 0 || memberRaw > 0 || discountAmount > 0;
+    const hasNoPrice = product.normalPrice <= 0 && product.promoPrice <= 0;
+    const isDiscountOnly = hasAnyDiscount && hasNoPrice;
 
     // Product Name
     const nameBaseSize = (settings.layout === '4' ? 11 : settings.layout === '2' ? 15 : 19) * groupScale;
@@ -395,7 +397,7 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
       return Math.max(promoHeight, tailTop - topY + tailHeight);
     };
 
-    if (isGranite && hasMeterPrice) {
+    if (!isDiscountOnly && isGranite && hasMeterPrice) {
       const graniteBaseScale = settings.layout === '4' ? 1 : settings.layout === '2' ? 1.06 : 1.12;
       const graniteScale = hasAnyDiscount ? graniteBaseScale : graniteBaseScale * 1.12;
       const columnGap = Math.max(20 * groupScale, contentWidth * 0.1);
@@ -412,7 +414,7 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
       const leftHeight = renderPriceBlock(product.promoPrice, product.uom, leftCenter, currentY, graniteScale, columnWidth);
       const rightHeight = renderPriceBlock(meterFinal, 'Mtr', rightCenter, currentY, graniteScale, columnWidth);
       currentY += Math.max(leftHeight, rightHeight) + 10 * groupScale;
-    } else {
+    } else if (!isDiscountOnly) {
       if (hasAnyDiscount) {
         const strikeHeight = renderStrikePrice(product.normalPrice, product.uom, centerX);
         currentY += strikeHeight;
@@ -425,17 +427,19 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
 
     // Bottom discount badge
     if (product.discountType === 'cut' && discountAmount > 0) {
-      const rowWidth = contentWidth * 0.6;
+      const rowWidth = isDiscountOnly ? contentWidth : contentWidth * 0.6;
       const rowHeight = (settings.layout === '4' ? 70 : settings.layout === '2' ? 84 : 96) * groupScale;
+      const heightScale = isDiscountOnly ? 1.6 : 1;
+      const headerRatio = isDiscountOnly ? 0.28 : 0.42;
       const rowY = currentY + 6 * groupScale;
-      const headerHeight = rowHeight * 0.42;
+      const headerHeight = rowHeight * headerRatio * heightScale;
       const radius = 16 * groupScale;
 
       objects.push(new Rect({
         left: centerX - rowWidth / 2,
         top: rowY,
         width: rowWidth,
-        height: rowHeight,
+        height: rowHeight * heightScale,
         fill: '#f8fafc',
         stroke: '#d1d5db',
         strokeWidth: 1,
@@ -466,7 +470,7 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
       objects.push(new FabricText('POTONGAN', {
         left: centerX,
         top: rowY + headerHeight * 0.5,
-        fontSize: (settings.layout === '4' ? 12 : settings.layout === '2' ? 13 : 14) * groupScale,
+        fontSize: (settings.layout === '4' ? 12 : settings.layout === '2' ? 13 : 14) * groupScale * (isDiscountOnly ? 1.4 : 1),
         fontFamily: 'Inter, sans-serif',
         fontWeight: '800',
         fill: '#ffffff',
@@ -475,8 +479,8 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
       }));
       objects.push(new FabricText(`Rp ${formatPrice(discountAmount)}`, {
         left: centerX,
-        top: rowY + headerHeight + (rowHeight - headerHeight) * 0.62,
-        fontSize: (settings.layout === '4' ? 26 : settings.layout === '2' ? 31 : 38) * groupScale,
+        top: rowY + headerHeight + (rowHeight * heightScale - headerHeight) * 0.55,
+        fontSize: (settings.layout === '4' ? 26 : settings.layout === '2' ? 31 : 38) * groupScale * (isDiscountOnly ? 1.8 : 1),
         fontFamily: 'Inter, sans-serif',
         fontWeight: '800',
         fill: '#4b5563',
@@ -499,9 +503,12 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
         return new Group(objects);
       }
 
-      const labelFontSize = (settings.layout === '4' ? 12 : settings.layout === '2' ? 13 : 14) * groupScale;
-      const valueFontSize = (settings.layout === '4' ? 26 : settings.layout === '2' ? 31 : 38) * groupScale;
+      const labelFontSize = (settings.layout === '4' ? 12 : settings.layout === '2' ? 13 : 14) * groupScale * (isDiscountOnly ? 1.7 : 1);
+      const valueFontSize = (settings.layout === '4' ? 26 : settings.layout === '2' ? 31 : 38) * groupScale * (isDiscountOnly ? 2.2 : 1);
       let rowWidth = items.length === 1 ? contentWidth * 0.4 : contentWidth;
+      if (isDiscountOnly) {
+        rowWidth = contentWidth;
+      }
       if (items.length === 1) {
         const labelMetrics = new FabricText(items[0].label, {
           fontSize: labelFontSize,
@@ -521,15 +528,17 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
         rowWidth = Math.min(maxWidth, Math.max(minWidth, textWidth + 36 * groupScale));
       }
       const rowHeight = (settings.layout === '4' ? 70 : settings.layout === '2' ? 84 : 96) * groupScale;
+      const heightScale = isDiscountOnly ? 2 : 1;
+      const headerRatio = isDiscountOnly ? 0.3 : 0.42;
       const rowY = currentY + 6 * groupScale;
-      const headerHeight = rowHeight * 0.42;
+      const headerHeight = rowHeight * headerRatio * heightScale;
       const radius = 16 * groupScale;
 
       objects.push(new Rect({
         left: centerX - rowWidth / 2,
         top: rowY,
         width: rowWidth,
-        height: rowHeight,
+        height: rowHeight * heightScale,
         fill: '#f8fafc',
         stroke: '#d1d5db',
         strokeWidth: 1,
@@ -547,7 +556,7 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
           left: cellX,
           top: rowY,
           width: cellWidth,
-          height: rowHeight,
+          height: rowHeight * heightScale,
           fill: '#f8fafc',
           stroke: '#d1d5db',
           strokeWidth: 1,
@@ -586,7 +595,7 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
         }));
         objects.push(new FabricText(item.value, {
           left: cellX + cellWidth / 2,
-          top: rowY + headerHeight + (rowHeight - headerHeight) * 0.62,
+          top: rowY + headerHeight + (rowHeight * heightScale - headerHeight) * 0.55,
           fontSize: valueFontSize,
           fontFamily: 'Inter, sans-serif',
           fontWeight: '800',
@@ -596,7 +605,7 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
         }));
 
         if (items.length > 1 && index > 0) {
-          objects.push(new Line([cellX, rowY + 6, cellX, rowY + rowHeight - 6], {
+          objects.push(new Line([cellX, rowY + 6, cellX, rowY + rowHeight * heightScale - 6], {
             stroke: '#e5e7eb',
             strokeWidth: 1,
           }));

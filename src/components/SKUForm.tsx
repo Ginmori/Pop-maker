@@ -172,21 +172,12 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
   };
 
   const handleAddCustomProduct = () => {
-    if (!customBrandInput) {
-      toast.error('Brand wajib dipilih');
-      return;
-    }
-
-    const brandName = customBrandInput;
+    const brandName = customBrandInput.trim();
     const brandSlug = brandName
       ? brandName.toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_+|_+$/g, '')
       : undefined;
     const brandLogoUrl = brandSlug ? `/brands/${brandSlug}.png` : undefined;
-
-    if (!nameInput.trim() || !descriptionInput.trim()) {
-      toast.error('Nama Produk dan Deskripsi wajib diisi');
-      return;
-    }
+    const safeName = nameInput.trim() || 'Produk Custom';
 
     const normalPrice = normalPriceInput ? Number(normalPriceInput) : 0;
     if (normalPriceInput && (!Number.isFinite(normalPrice) || normalPrice <= 0)) {
@@ -195,7 +186,7 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
     }
 
     const finalPrice = finalPriceInput ? Number(finalPriceInput) : normalPrice;
-    if (!Number.isFinite(finalPrice) || finalPrice <= 0) {
+    if (finalPriceInput && (!Number.isFinite(finalPrice) || finalPrice < 0)) {
       toast.error('Harga final tidak valid');
       return;
     }
@@ -249,11 +240,11 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
 
     const product: Product = {
       sku: id,
-      name: nameInput.trim(),
+      name: safeName,
       brandId: brandSlug,
-      brand: brandName,
+      brand: brandName || undefined,
       brandLogoUrl,
-      description: descriptionInput.trim(),
+      description: descriptionInput.trim() || undefined,
       uom: uomInput.trim() || undefined,
       normalPrice,
       promoPrice,

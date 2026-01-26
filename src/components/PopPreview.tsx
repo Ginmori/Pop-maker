@@ -147,8 +147,17 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
       currentY += brandFontSize + 10 * groupScale;
     }
 
+    const baseDiscount = product.discount ?? 0;
+    const disc2Raw = product.disc2 ?? 0;
+    const disc3Raw = product.disc3 ?? 0;
+    const memberRaw = product.memberDiscount ?? 0;
+    const discountAmount = product.discountAmount ?? 0;
+    const hasAnyDiscount =
+      baseDiscount > 0 || disc2Raw > 0 || disc3Raw > 0 || memberRaw > 0 || discountAmount > 0;
+
     // Product Name
-    const nameSize = (settings.layout === '4' ? 11 : settings.layout === '2' ? 15 : 19) * groupScale;
+    const nameBaseSize = (settings.layout === '4' ? 11 : settings.layout === '2' ? 15 : 19) * groupScale;
+    const nameSize = hasAnyDiscount ? nameBaseSize : nameBaseSize * 1.15;
     const nameBox = new Textbox(product.name, {
       left: centerX,
       top: currentY,
@@ -161,7 +170,7 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
       originX: 'center',
       originY: 'top',
     });
-    fitTextToLines(product.name, 1, nameBox, nameSize);
+    fitTextToLines(product.name, hasAnyDiscount ? 1 : 2, nameBox, nameSize);
     objects.push(nameBox);
     const nameHeight = Math.max(nameSize, nameBox.getScaledHeight?.() ?? nameBox.height ?? nameSize);
     currentY += nameHeight + 6 * groupScale;
@@ -387,34 +396,34 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
     };
 
     if (isGranite && hasMeterPrice) {
-      const graniteScale = settings.layout === '4' ? 1 : settings.layout === '2' ? 1.06 : 1.12;
+      const graniteBaseScale = settings.layout === '4' ? 1 : settings.layout === '2' ? 1.06 : 1.12;
+      const graniteScale = hasAnyDiscount ? graniteBaseScale : graniteBaseScale * 1.12;
       const columnGap = Math.max(20 * groupScale, contentWidth * 0.1);
       const columnWidth = (contentWidth - columnGap) / 2;
       const leftCenter = centerX - (columnWidth / 2 + columnGap / 2);
       const rightCenter = centerX + (columnWidth / 2 + columnGap / 2);
       const strikeScale = graniteScale * 0.9;
-      const leftStrikeHeight = renderStrikePrice(product.normalPrice, product.uom, leftCenter, strikeScale);
-      const rightStrikeHeight = renderStrikePrice(meterBase, 'Mtr', rightCenter, strikeScale);
-      currentY += Math.max(leftStrikeHeight, rightStrikeHeight);
+      if (hasAnyDiscount) {
+        const leftStrikeHeight = renderStrikePrice(product.normalPrice, product.uom, leftCenter, strikeScale);
+        const rightStrikeHeight = renderStrikePrice(meterBase, 'Mtr', rightCenter, strikeScale);
+        currentY += Math.max(leftStrikeHeight, rightStrikeHeight);
+      }
 
       const leftHeight = renderPriceBlock(product.promoPrice, product.uom, leftCenter, currentY, graniteScale, columnWidth);
       const rightHeight = renderPriceBlock(meterFinal, 'Mtr', rightCenter, currentY, graniteScale, columnWidth);
       currentY += Math.max(leftHeight, rightHeight) + 10 * groupScale;
     } else {
-      const strikeHeight = renderStrikePrice(product.normalPrice, product.uom, centerX);
-      currentY += strikeHeight;
+      if (hasAnyDiscount) {
+        const strikeHeight = renderStrikePrice(product.normalPrice, product.uom, centerX);
+        currentY += strikeHeight;
+      }
 
-      const nonGraniteScale = 1.45;
+      const nonGraniteScale = hasAnyDiscount ? 1.45 : 1.65;
       const promoHeight = renderPriceBlock(product.promoPrice, product.uom, centerX, currentY, nonGraniteScale, contentWidth);
       currentY += promoHeight + 10 * groupScale;
     }
 
     // Bottom discount badge
-    const baseDiscount = product.discount ?? 0;
-    const disc2Raw = product.disc2 ?? 0;
-    const disc3Raw = product.disc3 ?? 0;
-    const memberRaw = product.memberDiscount ?? 0;
-    const discountAmount = product.discountAmount ?? 0;
     if (product.discountType === 'cut' && discountAmount > 0) {
       const rowWidth = contentWidth * 0.6;
       const rowHeight = (settings.layout === '4' ? 70 : settings.layout === '2' ? 84 : 96) * groupScale;

@@ -18,6 +18,8 @@ export interface Product {
   discountAmount?: number;
   description?: string;
   extraDiscount?: number;
+  disc2?: number;
+  disc3?: number;
   memberDiscount?: number;
   uom?: string;
   basePricePerMeter?: number;

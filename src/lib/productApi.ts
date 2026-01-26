@@ -37,6 +37,8 @@ export const fetchProductBySku = async (sku: string): Promise<Product | null> =>
     promoPrice: Number(data.promoPrice) || 0,
     discount: Number(data.discount) || 0,
     extraDiscount: data.extraDiscount ? Number(data.extraDiscount) : undefined,
+    disc2: data.disc2 ? Number(data.disc2) : undefined,
+    disc3: data.disc3 ? Number(data.disc3) : undefined,
     memberDiscount: data.memberDiscount ? Number(data.memberDiscount) : undefined,
     discountType: data.discountType || "percent",
     uom: data.uom || undefined,

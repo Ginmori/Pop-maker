@@ -191,7 +191,9 @@ const buildProductResponse = (row) => {
   const basePrice = toNumber(row.base_price);
   const finalPrice = toNumber(row.final_price);
   const baseDiscount = toNumber(row.disc1 ?? row.disc_1);
-  const extraDiscount = toNumber(row.disc2 ?? row.disc_2) + toNumber(row.disc3 ?? row.disc_3);
+  const disc2 = toNumber(row.disc2 ?? row.disc_2);
+  const disc3 = toNumber(row.disc3 ?? row.disc_3);
+  const extraDiscount = disc2 + disc3;
   const memberDiscount = toNumber(row.disc4 ?? row.disc_4);
   const sku = row.code ?? row.pd_code;
   const name = row.name ?? row.pd_short_desc;
@@ -202,7 +204,7 @@ const buildProductResponse = (row) => {
   const brandSegment = row.brand ?? row.segment2;
   const descSegment = row.desc ?? row.segment4;
 
-  let totalDiscount = baseDiscount + extraDiscount + memberDiscount;
+  let totalDiscount = baseDiscount + extraDiscount;
   if (totalDiscount <= 0 && basePrice > 0 && finalPrice > 0 && finalPrice < basePrice) {
     totalDiscount = Math.round(((basePrice - finalPrice) / basePrice) * 100 * 100) / 100;
   }
@@ -214,8 +216,10 @@ const buildProductResponse = (row) => {
     barcode: row.barcode ?? row.barcode1,
     normalPrice: basePrice,
     promoPrice: finalPrice || basePrice,
-    discount: Math.round(totalDiscount * 100) / 100,
+    discount: Math.round(baseDiscount * 100) / 100,
     extraDiscount: Math.round(extraDiscount * 100) / 100 || undefined,
+    disc2: Math.round(disc2 * 100) / 100 || undefined,
+    disc3: Math.round(disc3 * 100) / 100 || undefined,
     memberDiscount: Math.round(memberDiscount * 100) / 100 || undefined,
     discountType: "percent",
     brandSegment: brandSegment || undefined,

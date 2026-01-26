@@ -1,10 +1,26 @@
 [
   {
-    "id": "tpl-3071dfd9-160f-4616-9060-fb87001e2acd",
-    "name": "GO",
-    "description": "Grand Opening",
-    "imageUrl": "/uploads/templates/tpl-3071dfd9-160f-4616-9060-fb87001e2acd.png",
-    "uploadedAt": 1768270003713,
+    "id": "tpl-0ee32f06-7385-49be-9e19-34ced16e9edd",
+    "name": "Promo",
+    "description": "Custom template",
+    "imageUrl": "/uploads/templates/tpl-0ee32f06-7385-49be-9e19-34ced16e9edd.png",
+    "uploadedAt": 1769390104249,
+    "type": "custom"
+  },
+  {
+    "id": "tpl-ebeac0bd-b88d-4e7b-8478-8f7fb4873d95",
+    "name": "Diskon Spesial",
+    "description": "Custom template",
+    "imageUrl": "/uploads/templates/tpl-ebeac0bd-b88d-4e7b-8478-8f7fb4873d95.png",
+    "uploadedAt": 1769390094805,
+    "type": "custom"
+  },
+  {
+    "id": "tpl-8d26f6bf-c54a-42b8-9c15-f748a493cfb3",
+    "name": "Harga Spesial",
+    "description": "Custom template",
+    "imageUrl": "/uploads/templates/tpl-8d26f6bf-c54a-42b8-9c15-f748a493cfb3.png",
+    "uploadedAt": 1769390085045,
     "type": "custom"
   }
 ]

@@ -107,58 +107,10 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
       }));
     }
 
-    // Brand (optional) with logo badge
+    // Brand (optional) without logo badge
     const brandLabel = product.brandSegment || product.brand;
-    const brandSlug = brandLabel ? brandLabel.toUpperCase().replace(/\s+/g, '_') : '';
-    const resolvedBrandLogoUrl = product.brandLogoUrl || (brandSlug ? `/brands/${brandSlug}.png` : undefined);
     if (brandLabel) {
-      const logoRadius = (settings.layout === '4' ? 24 : settings.layout === '2' ? 29 : 36) * groupScale;
-      const brandSize = (settings.layout === '4' ? 14 : settings.layout === '2' ? 16 : 18) * groupScale;
-
-      if (resolvedBrandLogoUrl) {
-        try {
-          const logoImg = await FabricImage.fromURL(resolvedBrandLogoUrl);
-          logoImg.scaleToHeight(logoRadius * 2);
-          logoImg.set({
-            left: centerX,
-            top: currentY,
-            originX: 'center',
-            originY: 'center',
-            selectable: false,
-          });
-          objects.push(logoImg);
-        } catch {
-          // Fallback handled below
-        }
-      }
-
-      if (!product.brandLogoUrl) {
-        const logoBg = product.brandColor || '#0ea5e9';
-        const logoTextColor = product.brandTextColor || '#ffffff';
-        const logoText = (product.brandLogoText || product.brand?.[0] || '?').toUpperCase();
-
-        objects.push(new Circle({
-          left: centerX,
-          top: currentY,
-          radius: logoRadius,
-          fill: logoBg,
-          originX: 'center',
-          originY: 'center',
-        }));
-
-        objects.push(new FabricText(logoText, {
-          left: centerX,
-          top: currentY,
-          fontSize: logoRadius,
-          fontFamily: 'Inter, sans-serif',
-          fontWeight: '800',
-          fill: logoTextColor,
-          originX: 'center',
-          originY: 'center',
-        }));
-      }
-
-      currentY += logoRadius * 2 + 6 * groupScale;
+      const brandSize = (settings.layout === '4' ? 36 : settings.layout === '2' ? 39 : 42) * groupScale;
 
       objects.push(new FabricText(brandLabel, {
         left: centerX,
@@ -174,7 +126,7 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
     }
 
     // Product Name
-    const nameSize = (settings.layout === '4' ? 18 : settings.layout === '2' ? 22 : 28) * groupScale;
+    const nameSize = (settings.layout === '4' ? 11 : settings.layout === '2' ? 15 : 19) * groupScale;
     const nameBox = new Textbox(product.name, {
       left: centerX,
       top: currentY,
@@ -182,7 +134,7 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
       fontSize: nameSize,
       fontFamily: 'Inter, sans-serif',
       fontWeight: '700',
-      fill: '#1f2937',
+      fill: '#111827',
       textAlign: 'center',
       originX: 'center',
       originY: 'top',
@@ -225,7 +177,7 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
 
     // Discount badge removed (center)
 
-    const priceSize = (settings.layout === '4' ? 44 : settings.layout === '2' ? 56 : 72) * groupScale;
+    const priceSize = (settings.layout === '4' ? 50 : settings.layout === '2' ? 62 : 78) * groupScale;
     const graniteLabel = `${product.descSegment || ''} ${product.description || ''}`.toUpperCase();
     const isGranite = graniteLabel.includes('GRANIT');
     const meterBase = Number(product.basePricePerMeter);
@@ -281,7 +233,7 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
         fontSize: localCurrencySize,
         fontFamily: 'Inter, sans-serif',
         fontWeight: '700',
-        fill: '#1f2937',
+        fill: '#0284c7',
         originX: 'left',
         originY: 'top',
       });
@@ -293,7 +245,7 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
         fontSize: localPriceSize,
         fontFamily: 'Inter, sans-serif',
         fontWeight: '900',
-        fill: '#1f2937',
+        fill: '#0284c7',
         originX: 'left',
         originY: 'top',
       });
@@ -311,7 +263,7 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
           fontSize: tailSize,
           fontFamily: 'Inter, sans-serif',
           fontWeight: '800',
-          fill: '#1f2937',
+          fill: '#0284c7',
           originX: 'left',
           originY: 'top',
         });
@@ -347,7 +299,7 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
           fontSize: uomSize,
           fontFamily: 'Inter, sans-serif',
           fontWeight: '600',
-          fill: '#1f2937',
+          fill: '#0284c7',
           originX: 'left',
           originY: 'top',
         }));
@@ -374,7 +326,8 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
       const strikeHeight = renderStrikePrice(product.normalPrice, product.uom, centerX);
       currentY += strikeHeight;
 
-      const promoHeight = renderPriceBlock(product.promoPrice, product.uom, centerX, currentY);
+      const nonGraniteScale = 1.45;
+      const promoHeight = renderPriceBlock(product.promoPrice, product.uom, centerX, currentY, nonGraniteScale);
       currentY += promoHeight + 10 * groupScale;
     }
 

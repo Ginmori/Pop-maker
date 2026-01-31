@@ -488,15 +488,20 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
         originY: 'center',
       }));
     } else if (product.discountType !== 'cut' && (baseDiscount > 0 || disc2Raw > 0 || disc3Raw > 0 || memberRaw > 0)) {
-      const baseValue = Math.round(baseDiscount);
-      const disc2Value = Math.round(disc2Raw);
-      const disc3Value = Math.round(disc3Raw);
-      const member = Math.round(memberRaw);
+      const formatPercentValue = (value: number) => {
+        if (!isDiscountOnly) return `${Math.round(value)}`;
+        const fixed = value.toFixed(2);
+        return fixed.replace(/\.00$/, '').replace(/(\.\d)0$/, '$1');
+      };
+      const baseValue = isDiscountOnly ? baseDiscount : Math.round(baseDiscount);
+      const disc2Value = isDiscountOnly ? disc2Raw : Math.round(disc2Raw);
+      const disc3Value = isDiscountOnly ? disc3Raw : Math.round(disc3Raw);
+      const member = isDiscountOnly ? memberRaw : Math.round(memberRaw);
       const discountParts = [baseValue, disc2Value, disc3Value].filter((value) => value > 0);
-      const discountValue = discountParts.map((value) => `${value}%`).join(' + ');
+      const discountValue = discountParts.map((value) => `${formatPercentValue(value)}%`).join(' + ');
       const items = [
         discountParts.length > 0 ? { label: 'DISKON', value: discountValue, colors: ['#ef4444', '#ef4444'] } : null,
-        member > 0 ? { label: 'MEMBER', value: `${member}%`, colors: ['#1d4ed8', '#60a5fa'] } : null,
+        member > 0 ? { label: 'MEMBER', value: `${formatPercentValue(member)}%`, colors: ['#1d4ed8', '#60a5fa'] } : null,
       ].filter(Boolean) as { label: string; value: string; colors: [string, string] }[];
 
       if (items.length === 0) {

@@ -208,7 +208,8 @@ const buildProductResponse = (row) => {
   if (totalDiscount <= 0 && basePrice > 0 && finalPrice > 0 && finalPrice < basePrice) {
     totalDiscount = Math.round(((basePrice - finalPrice) / basePrice) * 100 * 100) / 100;
   }
-  const memberMultiplier = memberDiscount > 0 ? (1 - memberDiscount / 100) : 1;
+  const hasBaseDiscount = baseDiscount > 0 || disc2 > 0 || disc3 > 0;
+  const memberMultiplier = memberDiscount > 0 && hasBaseDiscount ? (1 - memberDiscount / 100) : 1;
   const adjustedFinalPrice = finalPrice > 0 ? Math.round(finalPrice * memberMultiplier) : finalPrice;
   const finalPricePerMeter = toNumber(row.final_price_per_meter ?? row.finalPricePerMeter);
   const adjustedFinalPricePerMeter =

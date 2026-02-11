@@ -426,7 +426,13 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
     }
 
     // Bottom discount badge
-    if (product.discountType === 'cut' && discountAmount > 0) {
+    const cutValue =
+      product.discountType === 'cut'
+        ? discountAmount
+        : baseDiscount > 100
+          ? baseDiscount
+          : 0;
+    if (cutValue > 0) {
       const rowWidth = isDiscountOnly ? contentWidth : contentWidth * 0.6;
       const rowHeight = (settings.layout === '4' ? 70 : settings.layout === '2' ? 84 : 96) * groupScale;
       const heightScale = isDiscountOnly ? 1.6 : 1;
@@ -467,7 +473,7 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
         ry: radius,
       }));
 
-      objects.push(new FabricText('POTONGAN', {
+      objects.push(new FabricText('POTONGAN HARGA', {
         left: centerX,
         top: rowY + headerHeight * 0.5,
         fontSize: (settings.layout === '4' ? 12 : settings.layout === '2' ? 13 : 14) * groupScale * (isDiscountOnly ? 1.4 : 1),
@@ -477,7 +483,7 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
         originX: 'center',
         originY: 'center',
       }));
-      objects.push(new FabricText(`Rp ${formatPrice(discountAmount)}`, {
+      objects.push(new FabricText(`Rp ${formatPrice(cutValue)}`, {
         left: centerX,
         top: rowY + headerHeight + (rowHeight * heightScale - headerHeight) * 0.55,
         fontSize: (settings.layout === '4' ? 26 : settings.layout === '2' ? 31 : 38) * groupScale * (isDiscountOnly ? 1.8 : 1),
@@ -487,7 +493,7 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
         originX: 'center',
         originY: 'center',
       }));
-    } else if (product.discountType !== 'cut' && (baseDiscount > 0 || disc2Raw > 0 || disc3Raw > 0 || memberRaw > 0)) {
+    } else if (baseDiscount > 0 || disc2Raw > 0 || disc3Raw > 0 || memberRaw > 0) {
       const formatPercentValue = (value: number) => {
         if (!isDiscountOnly) return `${Math.round(value)}`;
         const fixed = value.toFixed(2);

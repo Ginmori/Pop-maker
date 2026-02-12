@@ -21,6 +21,7 @@ export interface Product {
   disc2?: number;
   disc3?: number;
   memberDiscount?: number;
+  upTo?: boolean;
   uom?: string;
   basePricePerMeter?: number;
   finalPricePerMeter?: number;

@@ -148,12 +148,16 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
     }
 
     const baseDiscount = product.discount ?? 0;
-    const disc2Raw = product.disc2 ?? 0;
+    const disc2Raw = product.extraDiscount ?? product.disc2 ?? 0;
     const disc3Raw = product.disc3 ?? 0;
-    const memberRaw = product.memberDiscount ?? 0;
+    const rawDisc4 = product.memberDiscount ?? 0;
+    const isDisc4MemberValue = rawDisc4 === 2 || rawDisc4 === 3;
+    const useDisc4AsMember = product.isCustom ? rawDisc4 > 0 : isDisc4MemberValue;
+    const memberRaw = useDisc4AsMember ? rawDisc4 : 0;
+    const disc4AsDiscountRaw = useDisc4AsMember ? 0 : rawDisc4;
     const discountAmount = product.discountAmount ?? 0;
     const hasAnyDiscount =
-      baseDiscount > 0 || disc2Raw > 0 || disc3Raw > 0 || memberRaw > 0 || discountAmount > 0;
+      baseDiscount > 0 || disc2Raw > 0 || disc3Raw > 0 || disc4AsDiscountRaw > 0 || memberRaw > 0 || discountAmount > 0;
     const hasNoPrice = product.normalPrice <= 0 && product.promoPrice <= 0;
     const isDiscountOnly = hasAnyDiscount && hasNoPrice;
 
@@ -493,7 +497,22 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
         originX: 'center',
         originY: 'center',
       }));
-    } else if (baseDiscount > 0 || disc2Raw > 0 || disc3Raw > 0 || memberRaw > 0) {
+    } else if (baseDiscount > 0 || disc2Raw > 0 || disc3Raw > 0 || disc4AsDiscountRaw > 0 || memberRaw > 0) {
+      const fitFontSizeToWidth = (text: string, initialSize: number, maxWidth: number, minSize: number) => {
+        let size = initialSize;
+        while (size > minSize) {
+          const metrics = new FabricText(text, {
+            fontSize: size,
+            fontFamily: 'Inter, sans-serif',
+            fontWeight: '800',
+          });
+          const width = metrics.getScaledWidth?.() ?? metrics.width ?? 0;
+          if (width <= maxWidth) return size;
+          size -= 1;
+        }
+        return minSize;
+      };
+
       const formatPercentValue = (value: number) => {
         if (!isDiscountOnly) return `${Math.round(value)}`;
         const fixed = value.toFixed(2);
@@ -502,11 +521,13 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
       const baseValue = isDiscountOnly ? baseDiscount : Math.round(baseDiscount);
       const disc2Value = isDiscountOnly ? disc2Raw : Math.round(disc2Raw);
       const disc3Value = isDiscountOnly ? disc3Raw : Math.round(disc3Raw);
+      const disc4AsDiscountValue = isDiscountOnly ? disc4AsDiscountRaw : Math.round(disc4AsDiscountRaw);
       const member = isDiscountOnly ? memberRaw : Math.round(memberRaw);
-      const discountParts = [baseValue, disc2Value, disc3Value].filter((value) => value > 0);
+      const discountParts = [baseValue, disc2Value, disc3Value, disc4AsDiscountValue].filter((value) => value > 0);
       const discountValue = discountParts.map((value) => `${formatPercentValue(value)}%`).join(' + ');
+      const discountLabel = product.upTo ? 'DISKON UP TO' : 'DISKON';
       const items = [
-        discountParts.length > 0 ? { label: 'DISKON', value: discountValue, colors: ['#ef4444', '#ef4444'] } : null,
+        discountParts.length > 0 ? { label: discountLabel, value: discountValue, colors: ['#ef4444', '#ef4444'] } : null,
         member > 0 ? { label: 'MEMBER', value: `${formatPercentValue(member)}%`, colors: ['#1d4ed8', '#60a5fa'] } : null,
       ].filter(Boolean) as { label: string; value: string; colors: [string, string] }[];
 
@@ -562,6 +583,19 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
 
       items.forEach((item, index) => {
         const cellX = centerX - rowWidth / 2 + cellWidth * index;
+        const textMaxWidth = Math.max(40, cellWidth - 24 * groupScale);
+        const dynamicLabelSize = fitFontSizeToWidth(
+          item.label,
+          labelFontSize,
+          textMaxWidth,
+          Math.max(10, labelFontSize * 0.7)
+        );
+        const dynamicValueSize = fitFontSizeToWidth(
+          item.value,
+          valueFontSize,
+          textMaxWidth,
+          Math.max(16, valueFontSize * 0.5)
+        );
 
         objects.push(new Rect({
           left: cellX,
@@ -597,7 +631,7 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
         objects.push(new FabricText(item.label, {
           left: cellX + cellWidth / 2,
           top: rowY + headerHeight * 0.5,
-          fontSize: labelFontSize,
+          fontSize: dynamicLabelSize,
           fontFamily: 'Inter, sans-serif',
           fontWeight: '800',
           fill: '#ffffff',
@@ -607,7 +641,7 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
         objects.push(new FabricText(item.value, {
           left: cellX + cellWidth / 2,
           top: rowY + headerHeight + (rowHeight * heightScale - headerHeight) * 0.55,
-          fontSize: valueFontSize,
+          fontSize: dynamicValueSize,
           fontFamily: 'Inter, sans-serif',
           fontWeight: '800',
           fill: items.length > 1 ? '#4b5563' : '#dc2626',

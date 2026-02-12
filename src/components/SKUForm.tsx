@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Product, searchProduct, formatPrice } from '@/data/products';
 import { fetchBrandSegments, fetchProductBySku, searchProducts, ProductSuggestion } from '@/lib/productApi';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, Trash2, Plus } from 'lucide-react';
@@ -36,6 +37,7 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
   const [priceCutInput, setPriceCutInput] = useState('');
   const [extraDiscountInput, setExtraDiscountInput] = useState('');
   const [memberDiscountInput, setMemberDiscountInput] = useState('');
+  const [upToInput, setUpToInput] = useState(false);
 
   const findBrand = (id?: string) => brands.find((b) => b.id === id);
   const normalizeSku = (value: string) => value.replace(/\s+/g, '');
@@ -169,6 +171,7 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
     setPriceCutInput('');
     setExtraDiscountInput('');
     setMemberDiscountInput('');
+    setUpToInput(false);
   };
 
   const handleAddCustomProduct = () => {
@@ -254,6 +257,7 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
       barcode: id,
       extraDiscount: extraDiscount || undefined,
       memberDiscount: memberDiscount || undefined,
+      upTo: upToInput || undefined,
       isCustom: true,
     };
 
@@ -429,6 +433,13 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
                   value={memberDiscountInput}
                   onChange={(e) => setMemberDiscountInput(e.target.value)}
                 />
+                <label className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm">
+                  <Checkbox
+                    checked={upToInput}
+                    onCheckedChange={(checked) => setUpToInput(Boolean(checked))}
+                  />
+                  <span>Up to</span>
+                </label>
               </div>
             ) : (
               <Input

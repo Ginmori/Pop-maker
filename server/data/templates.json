@@ -1,5 +1,13 @@
 [
   {
+    "id": "tpl-9e4acb40-c0e9-408c-8267-80493d418fc3",
+    "name": "Rezeki Angpao",
+    "description": "s",
+    "imageUrl": "/uploads/templates/tpl-9e4acb40-c0e9-408c-8267-80493d418fc3.jpg",
+    "uploadedAt": 1770704881261,
+    "type": "custom"
+  },
+  {
     "id": "tpl-0a98bf56-006b-4456-b61c-56337bfac0b1",
     "name": "Harga Spesial",
     "description": "Custom template",

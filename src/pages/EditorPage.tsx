@@ -42,6 +42,12 @@ const writeStoredBrands = (brands: Brand[]) => {
   window.localStorage.setItem(BRAND_STORAGE_KEY, JSON.stringify(brands));
 };
 
+const isFullThemeTemplate = (template?: Template | null): boolean => {
+  if (!template) return false;
+  const marker = `${template.name || ''} ${template.description || ''}`.toLowerCase();
+  return marker.includes('full') || marker.includes('tema full');
+};
+
 const EditorPage = () => {
   const navigate = useNavigate();
   const [userLabel, setUserLabel] = useState(() => getAuthUser()?.username || 'User');
@@ -70,6 +76,7 @@ const EditorPage = () => {
     showBarcode: true,
     layout: '1' as const,
   };
+  const canRunActions = products.length > 0 || isFullThemeTemplate(selectedTemplateData);
 
   useEffect(() => {
     if (!getAuthToken()) {
@@ -388,7 +395,7 @@ const EditorPage = () => {
               onGeneratePreview={handleGeneratePreview}
               onDownloadPDF={handleDownloadPDF}
               onPrint={handlePrint}
-              hasProducts={products.length > 0}
+              hasProducts={canRunActions}
             />
           </div>
         </aside>

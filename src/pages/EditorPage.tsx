@@ -76,7 +76,8 @@ const EditorPage = () => {
     showBarcode: true,
     layout: '1' as const,
   };
-  const canRunActions = products.length > 0 || isFullThemeTemplate(selectedTemplateData);
+  const isProductFormDisabled = isFullThemeTemplate(selectedTemplateData);
+  const canRunActions = products.length > 0 || isProductFormDisabled;
 
   useEffect(() => {
     if (!getAuthToken()) {
@@ -387,6 +388,7 @@ const EditorPage = () => {
               onSelectProduct={handleSelectProduct}
               activeSku={products[activeIndex]?.sku}
               brands={brandList}
+              disabled={isProductFormDisabled}
             />
 
             <div className="h-px bg-border" />

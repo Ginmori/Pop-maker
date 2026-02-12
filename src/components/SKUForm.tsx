@@ -16,9 +16,10 @@ interface SKUFormProps {
   onSelectProduct?: (sku: string) => void;
   activeSku?: string;
   brands: Brand[];
+  disabled?: boolean;
 }
 
-export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProduct, activeSku, brands }: SKUFormProps) => {
+export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProduct, activeSku, brands, disabled = false }: SKUFormProps) => {
   const [mode, setMode] = useState<'sku' | 'custom'>('sku');
   const [skuInput, setSkuInput] = useState('');
   const [skuSuggestions, setSkuSuggestions] = useState<ProductSuggestion[]>([]);
@@ -43,6 +44,12 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
   const normalizeSku = (value: string) => value.replace(/\s+/g, '');
 
   useEffect(() => {
+    if (disabled) {
+      setSkuSuggestions([]);
+      setIsSearching(false);
+      return;
+    }
+
     if (mode !== 'sku') {
       setSkuSuggestions([]);
       setIsSearching(false);
@@ -70,7 +77,7 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
       isActive = false;
       clearTimeout(handle);
     };
-  }, [skuInput, mode]);
+  }, [disabled, skuInput, mode]);
 
   useEffect(() => {
     if (mode !== 'custom') return;
@@ -98,6 +105,7 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
   }, [brandOptions.length, customBrandInput, mode]);
 
   const handleSearch = async (overrideSku?: string) => {
+    if (disabled) return;
     const skuValue = normalizeSku(overrideSku ?? skuInput);
     if (!skuValue) {
       toast.error('Masukkan SKU terlebih dahulu');
@@ -175,6 +183,7 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
   };
 
   const handleAddCustomProduct = () => {
+    if (disabled) return;
     const brandName = customBrandInput.trim();
     const brandSlug = brandName
       ? brandName.toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_+|_+$/g, '')
@@ -278,6 +287,7 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
           variant={mode === 'sku' ? 'default' : 'secondary'}
           onClick={() => setMode('sku')}
           className="w-full"
+          disabled={disabled}
         >
           Input SKU
         </Button>
@@ -285,6 +295,7 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
           variant={mode === 'custom' ? 'default' : 'secondary'}
           onClick={() => setMode('custom')}
           className="w-full"
+          disabled={disabled}
         >
           Custom
         </Button>
@@ -300,8 +311,9 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
               onChange={(e) => setSkuInput(e.target.value)}
               onKeyDown={handleKeyDown}
               className="flex-1"
+              disabled={disabled}
             />
-            <Button onClick={handleSearch} size="default" disabled={isSubmitting}>
+            <Button onClick={handleSearch} size="default" disabled={isSubmitting || disabled}>
               {isSubmitting ? (
                 'Mencari...'
               ) : (
@@ -324,7 +336,7 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
                       type="button"
                       className="w-full px-3 py-2 text-left text-sm hover:bg-muted/60 disabled:opacity-60"
                       onClick={() => handleSelectSuggestion(item)}
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || disabled}
                     >
                       <span className="font-mono text-xs text-muted-foreground">{item.sku}</span>
                       <span className="ml-2 text-foreground">{item.name}</span>
@@ -343,7 +355,7 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
             <Select
               value={customBrandInput}
               onValueChange={setCustomBrandInput}
-              disabled={isLoadingBrands || brandOptions.length === 0}
+              disabled={disabled || isLoadingBrands || brandOptions.length === 0}
             >
               <SelectTrigger>
                 <SelectValue placeholder={isLoadingBrands ? 'Memuat brand...' : 'Pilih brand'} />
@@ -366,16 +378,19 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
               placeholder="Nama Produk"
               value={nameInput}
               onChange={(e) => setNameInput(e.target.value)}
+              disabled={disabled}
             />
             <Input
               placeholder="Deskripsi"
               value={descriptionInput}
               onChange={(e) => setDescriptionInput(e.target.value)}
+              disabled={disabled}
             />
             <Input
               placeholder="UOM (contoh: Dus, Pcs)"
               value={uomInput}
               onChange={(e) => setUomInput(e.target.value)}
+              disabled={disabled}
             />
             <Input
               placeholder="Harga Normal"
@@ -383,6 +398,7 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
               min="0"
               value={normalPriceInput}
               onChange={(e) => setNormalPriceInput(e.target.value)}
+              disabled={disabled}
             />
             <Input
               placeholder="Harga Final"
@@ -390,6 +406,7 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
               min="0"
               value={finalPriceInput}
               onChange={(e) => setFinalPriceInput(e.target.value)}
+              disabled={disabled}
             />
 
             {/* Price Mode Selector */}
@@ -398,6 +415,7 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
                 variant={priceMode === 'discount' ? 'default' : 'secondary'}
                 onClick={() => setPriceMode('discount')}
                 className="w-full"
+                disabled={disabled}
               >
                 Input Diskon
               </Button>
@@ -405,6 +423,7 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
                 variant={priceMode === 'cut' ? 'default' : 'secondary'}
                 onClick={() => setPriceMode('cut')}
                 className="w-full"
+                disabled={disabled}
               >
                 Potongan Harga
               </Button>
@@ -418,6 +437,7 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
                   min="0"
                   value={baseDiscountInput}
                   onChange={(e) => setBaseDiscountInput(e.target.value)}
+                  disabled={disabled}
                 />
                 <Input
                   placeholder="Extra Diskon (%) - Opsional"
@@ -425,6 +445,7 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
                   min="0"
                   value={extraDiscountInput}
                   onChange={(e) => setExtraDiscountInput(e.target.value)}
+                  disabled={disabled}
                 />
                 <Input
                   placeholder="Diskon Member (%) - Opsional"
@@ -432,11 +453,13 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
                   min="0"
                   value={memberDiscountInput}
                   onChange={(e) => setMemberDiscountInput(e.target.value)}
+                  disabled={disabled}
                 />
                 <label className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm">
                   <Checkbox
                     checked={upToInput}
                     onCheckedChange={(checked) => setUpToInput(Boolean(checked))}
+                    disabled={disabled}
                   />
                   <span>Up to</span>
                 </label>
@@ -448,10 +471,11 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
                 min="0"
                 value={priceCutInput}
                 onChange={(e) => setPriceCutInput(e.target.value)}
+                disabled={disabled}
               />
             )}
           </div>
-          <Button onClick={handleAddCustomProduct} size="default" className="w-full">
+          <Button onClick={handleAddCustomProduct} size="default" className="w-full" disabled={disabled}>
             <Plus className="w-4 h-4 mr-1" />
             Tambah Produk Custom
           </Button>
@@ -465,17 +489,21 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
           return (
           <div
             key={product.sku}
-            className={`product-card animate-fade-in transition-colors ${onSelectProduct ? 'cursor-pointer hover:border-primary/60' : ''} ${isActive ? 'border-primary/70 ring-2 ring-primary/20' : ''}`}
-            onClick={() => onSelectProduct?.(product.sku)}
+            className={`product-card animate-fade-in transition-colors ${onSelectProduct && !disabled ? 'cursor-pointer hover:border-primary/60' : ''} ${isActive ? 'border-primary/70 ring-2 ring-primary/20' : ''}`}
+            onClick={() => {
+              if (disabled) return;
+              onSelectProduct?.(product.sku);
+            }}
             onKeyDown={(event) => {
+              if (disabled) return;
               if (!onSelectProduct) return;
               if (event.key === 'Enter' || event.key === ' ') {
                 event.preventDefault();
                 onSelectProduct(product.sku);
               }
             }}
-            role={onSelectProduct ? 'button' : undefined}
-            tabIndex={onSelectProduct ? 0 : undefined}
+            role={onSelectProduct && !disabled ? 'button' : undefined}
+            tabIndex={onSelectProduct && !disabled ? 0 : undefined}
           >
             <div className="flex items-start justify-between">
               <div className="flex-1 min-w-0">
@@ -504,9 +532,11 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
                 size="icon"
                 onClick={(event) => {
                   event.stopPropagation();
+                  if (disabled) return;
                   onRemoveProduct(product.sku);
                 }}
                 className="text-muted-foreground hover:text-destructive"
+                disabled={disabled}
               >
                 <Trash2 className="w-4 h-4" />
               </Button>

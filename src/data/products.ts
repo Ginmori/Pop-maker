@@ -1,3 +1,9 @@
+export interface CustomPriceOption {
+  uom?: string;
+  normalPrice: number;
+  promoPrice: number;
+}
+
 export interface Product {
   sku: string;
   name: string;
@@ -23,6 +29,7 @@ export interface Product {
   memberDiscount?: number;
   upTo?: boolean;
   uom?: string;
+  customPriceOptions?: CustomPriceOption[];
   basePricePerMeter?: number;
   finalPricePerMeter?: number;
   isCustom?: boolean;

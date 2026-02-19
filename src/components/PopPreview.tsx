@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { Canvas as FabricCanvas, Rect, FabricText, Line, Group, FabricImage, Circle, Textbox, Gradient } from 'fabric';
-import { Product, formatPrice } from '@/data/products';
+import { Product, CustomPriceOption, formatPrice } from '@/data/products';
 import { Template } from '@/data/templates';
 import { PopSettingsState } from './PopSettings';
 import { Minus, Plus, ChevronUp } from 'lucide-react';
@@ -17,6 +17,14 @@ interface PopPreviewProps {
 
 export interface PopPreviewHandle {
   getPageImages: () => Promise<string[]>;
+}
+
+interface PopItemTransform {
+  left?: number;
+  top?: number;
+  scaleX?: number;
+  scaleY?: number;
+  angle?: number;
 }
 
 // A4 dimensions at 72 DPI
@@ -38,6 +46,7 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
   const zoomIn = () => onScaleChange(Math.min(previewScale + 0.25, 2));
   const zoomOut = () => onScaleChange(Math.max(previewScale - 0.25, 0.5));
   const resetZoom = () => onScaleChange(1);
+  const [itemTransforms, setItemTransforms] = useState<Record<string, PopItemTransform>>({});
 
   const drawBarcode = useCallback((x: number, y: number, width: number, code: string): Group => {
     const barWidth = width / 40;
@@ -156,9 +165,19 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
     const memberRaw = useDisc4AsMember ? rawDisc4 : 0;
     const disc4AsDiscountRaw = useDisc4AsMember ? 0 : rawDisc4;
     const discountAmount = product.discountAmount ?? 0;
+    const priceRows: CustomPriceOption[] = (
+      product.customPriceOptions && product.customPriceOptions.length > 0
+        ? product.customPriceOptions
+        : [{ uom: product.uom, normalPrice: product.normalPrice, promoPrice: product.promoPrice }]
+    ).filter((row) => (row.normalPrice ?? 0) > 0 || (row.promoPrice ?? 0) > 0);
+    const primaryPrice = priceRows[0] ?? {
+      uom: product.uom,
+      normalPrice: product.normalPrice,
+      promoPrice: product.promoPrice,
+    };
     const hasAnyDiscount =
       baseDiscount > 0 || disc2Raw > 0 || disc3Raw > 0 || disc4AsDiscountRaw > 0 || memberRaw > 0 || discountAmount > 0;
-    const hasNoPrice = product.normalPrice <= 0 && product.promoPrice <= 0;
+    const hasNoPrice = priceRows.length === 0;
     const isDiscountOnly = hasAnyDiscount && hasNoPrice;
 
     // Product Name
@@ -210,7 +229,7 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
       [centerX - dividerWidth / 2, currentY, centerX + dividerWidth / 2, currentY],
       { stroke: '#e5e7eb', strokeWidth: 1 },
     ));
-    currentY += 10 * groupScale;
+    currentY += (priceRows.length > 1 ? 4 : 10) * groupScale;
 
     // Discount badge removed (center)
 
@@ -221,7 +240,13 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
     const meterFinal = Number(product.finalPricePerMeter);
     const hasMeterPrice = Number.isFinite(meterFinal) && Number.isFinite(meterBase);
 
-    const renderStrikePrice = (price: number, uomLabel: string | undefined, alignX: number, scale = 1) => {
+    const renderStrikePrice = (
+      price: number,
+      uomLabel: string | undefined,
+      alignX: number,
+      scale = 1,
+      gapScale = 1
+    ) => {
       if (!settings.showStrikePrice || !price) return 0;
       const strikeFontSize = (settings.layout === '4' ? 18 : settings.layout === '2' ? 20 : 22) * groupScale * scale;
       const strikeText = new FabricText(`Rp ${formatPrice(price)}`, {
@@ -253,7 +278,7 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
         stroke: '#dc2626',
         strokeWidth: 2,
       }));
-      return strikeFontSize + 10 * groupScale;
+      return strikeFontSize + 10 * groupScale * gapScale;
     };
 
     const renderPriceBlock = (
@@ -401,7 +426,7 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
       return Math.max(promoHeight, tailTop - topY + tailHeight);
     };
 
-    if (!isDiscountOnly && isGranite && hasMeterPrice) {
+    if (!isDiscountOnly && isGranite && hasMeterPrice && priceRows.length <= 1) {
       const graniteBaseScale = settings.layout === '4' ? 1 : settings.layout === '2' ? 1.06 : 1.12;
       const graniteScale = hasAnyDiscount ? graniteBaseScale : graniteBaseScale * 1.12;
       const columnGap = Math.max(20 * groupScale, contentWidth * 0.1);
@@ -410,23 +435,55 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
       const rightCenter = centerX + (columnWidth / 2 + columnGap / 2);
       const strikeScale = graniteScale * 0.9;
       if (hasAnyDiscount) {
-        const leftStrikeHeight = renderStrikePrice(product.normalPrice, product.uom, leftCenter, strikeScale);
+        const leftStrikeHeight = renderStrikePrice(primaryPrice.normalPrice, primaryPrice.uom, leftCenter, strikeScale);
         const rightStrikeHeight = renderStrikePrice(meterBase, 'Mtr', rightCenter, strikeScale);
         currentY += Math.max(leftStrikeHeight, rightStrikeHeight);
       }
 
-      const leftHeight = renderPriceBlock(product.promoPrice, product.uom, leftCenter, currentY, graniteScale, columnWidth);
+      const leftHeight = renderPriceBlock(primaryPrice.promoPrice, primaryPrice.uom, leftCenter, currentY, graniteScale, columnWidth);
       const rightHeight = renderPriceBlock(meterFinal, 'Mtr', rightCenter, currentY, graniteScale, columnWidth);
       currentY += Math.max(leftHeight, rightHeight) + 10 * groupScale;
     } else if (!isDiscountOnly) {
-      if (hasAnyDiscount) {
-        const strikeHeight = renderStrikePrice(product.normalPrice, product.uom, centerX);
-        currentY += strikeHeight;
-      }
+      if (priceRows.length > 1) {
+        const rowScale = priceRows.length >= 3 ? 0.58 : 0.72;
+        const strikeScale = rowScale * 0.48;
+        const rowGap = 3 * groupScale;
+        const separatorGap = 3 * groupScale;
+        priceRows.forEach((row, index) => {
+          const effectivePromo = row.promoPrice > 0 ? row.promoPrice : row.normalPrice;
+          const hasStrike = settings.showStrikePrice && row.normalPrice > 0 && row.normalPrice > effectivePromo;
+          if (hasStrike) {
+            const strikeHeight = renderStrikePrice(row.normalPrice, row.uom, centerX, strikeScale, 0.4);
+            currentY += strikeHeight;
+          }
+          const promoHeight = renderPriceBlock(
+            effectivePromo,
+            row.uom,
+            centerX,
+            currentY,
+            rowScale,
+            contentWidth * 0.9
+          );
+          currentY += promoHeight + rowGap;
+          if (index < priceRows.length - 1) {
+            const separatorWidth = contentWidth * 0.86;
+            objects.push(new Line(
+              [centerX - separatorWidth / 2, currentY, centerX + separatorWidth / 2, currentY],
+              { stroke: '#e5e7eb', strokeWidth: 1 },
+            ));
+            currentY += separatorGap;
+          }
+        });
+      } else {
+        if (hasAnyDiscount) {
+          const strikeHeight = renderStrikePrice(primaryPrice.normalPrice, primaryPrice.uom, centerX);
+          currentY += strikeHeight;
+        }
 
-      const nonGraniteScale = hasAnyDiscount ? 1.45 : 1.65;
-      const promoHeight = renderPriceBlock(product.promoPrice, product.uom, centerX, currentY, nonGraniteScale, contentWidth);
-      currentY += promoHeight + 10 * groupScale;
+        const nonGraniteScale = hasAnyDiscount ? 1.45 : 1.65;
+        const promoHeight = renderPriceBlock(primaryPrice.promoPrice, primaryPrice.uom, centerX, currentY, nonGraniteScale, contentWidth);
+        currentY += promoHeight + 10 * groupScale;
+      }
     }
 
     // Bottom discount badge
@@ -514,15 +571,14 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
       };
 
       const formatPercentValue = (value: number) => {
-        if (!isDiscountOnly) return `${Math.round(value)}`;
         const fixed = value.toFixed(2);
         return fixed.replace(/\.00$/, '').replace(/(\.\d)0$/, '$1');
       };
-      const baseValue = isDiscountOnly ? baseDiscount : Math.round(baseDiscount);
-      const disc2Value = isDiscountOnly ? disc2Raw : Math.round(disc2Raw);
-      const disc3Value = isDiscountOnly ? disc3Raw : Math.round(disc3Raw);
-      const disc4AsDiscountValue = isDiscountOnly ? disc4AsDiscountRaw : Math.round(disc4AsDiscountRaw);
-      const member = isDiscountOnly ? memberRaw : Math.round(memberRaw);
+      const baseValue = baseDiscount;
+      const disc2Value = disc2Raw;
+      const disc3Value = disc3Raw;
+      const disc4AsDiscountValue = disc4AsDiscountRaw;
+      const member = memberRaw;
       const discountParts = [baseValue, disc2Value, disc3Value, disc4AsDiscountValue].filter((value) => value > 0);
       const discountValue = discountParts.map((value) => `${formatPercentValue(value)}%`).join(' + ');
       const discountLabel = product.upTo ? 'DISKON UP TO' : 'DISKON';
@@ -698,6 +754,11 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
       }
 
       const popGroup = await drawPOPItem(product, 0, 0, itemWidth, itemHeight, settings, false);
+      const savedTransform = itemTransforms[product.sku];
+      if (savedTransform) {
+        popGroup.set(savedTransform);
+        popGroup.setCoords();
+      }
       canvas.add(popGroup);
       canvas.renderAll();
     };
@@ -713,6 +774,11 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
 
         if (product) {
           const popGroup = await drawPOPItem(product, 0, 0, itemWidth, itemHeight, settings, true);
+          const savedTransform = itemTransforms[product.sku];
+          if (savedTransform) {
+            popGroup.set(savedTransform);
+            popGroup.setCoords();
+          }
           canvas.add(popGroup);
         }
 
@@ -724,7 +790,7 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
     } else {
       await renderDefaultCanvas();
     }
-  }, [drawPOPItem, selectedTemplateData, settings]);
+  }, [drawPOPItem, itemTransforms, selectedTemplateData, settings]);
 
   useImperativeHandle(ref, () => ({
     getPageImages: async () => {
@@ -769,10 +835,10 @@ export const PopPreview = forwardRef<PopPreviewHandle, PopPreviewProps>(({
           >
             <PageCanvas
               product={products[currentPage]}
-              settings={settings}
-              selectedTemplateData={selectedTemplateData}
-              drawPOPItem={drawPOPItem}
               renderPageCanvas={renderPageCanvas}
+              onTransformChange={(sku, transform) => {
+                setItemTransforms((prev) => ({ ...prev, [sku]: transform }));
+              }}
             />
           </div>
           {totalPages > 1 ? (
@@ -823,9 +889,10 @@ PopPreview.displayName = 'PopPreview';
 interface PageCanvasProps {
   product: Product | undefined;
   renderPageCanvas: (canvas: FabricCanvas, product: Product | undefined) => Promise<void>;
+  onTransformChange: (sku: string, transform: PopItemTransform) => void;
 }
 
-const PageCanvas = ({ product, renderPageCanvas }: PageCanvasProps) => {
+const PageCanvas = ({ product, renderPageCanvas, onTransformChange }: PageCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [fabricCanvas, setFabricCanvas] = useState<FabricCanvas | null>(null);
 
@@ -854,6 +921,26 @@ const PageCanvas = ({ product, renderPageCanvas }: PageCanvasProps) => {
   useEffect(() => {
     renderCanvas();
   }, [renderCanvas]);
+
+  useEffect(() => {
+    if (!fabricCanvas || !product) return;
+    const handleObjectModified = (event: { target?: Group }) => {
+      const target = event.target;
+      if (!target) return;
+      onTransformChange(product.sku, {
+        left: target.left,
+        top: target.top,
+        scaleX: target.scaleX,
+        scaleY: target.scaleY,
+        angle: target.angle,
+      });
+    };
+
+    fabricCanvas.on('object:modified', handleObjectModified);
+    return () => {
+      fabricCanvas.off('object:modified', handleObjectModified);
+    };
+  }, [fabricCanvas, onTransformChange, product]);
 
   return <canvas ref={canvasRef} />;
 };

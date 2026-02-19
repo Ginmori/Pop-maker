@@ -1,5 +1,13 @@
 [
   {
+    "id": "tpl-c94d46a2-7e73-4e04-91b8-46b4b12983a9",
+    "name": "STIKER_TIDAK BERLAKU ANGPAO_FULL",
+    "description": "Custom template",
+    "imageUrl": "/uploads/templates/tpl-c94d46a2-7e73-4e04-91b8-46b4b12983a9.jpg",
+    "uploadedAt": 1770973888275,
+    "type": "custom"
+  },
+  {
     "id": "tpl-e882257f-1377-444e-9801-c411fe726963",
     "name": "A4 TEMA FULL_POHON ANGPAO REJEKI",
     "description": "POP FULL TEMA",
@@ -29,14 +37,6 @@
     "description": "Custom template",
     "imageUrl": "/uploads/templates/tpl-a8aaed0b-caee-498c-a5b3-42275d5bfeb7.png",
     "uploadedAt": 1769398796107,
-    "type": "custom"
-  },
-  {
-    "id": "tpl-7bf93b29-a786-46cf-82d6-b9846b5df587",
-    "name": "Harga Khusus",
-    "description": "Custom template",
-    "imageUrl": "/uploads/templates/tpl-7bf93b29-a786-46cf-82d6-b9846b5df587.png",
-    "uploadedAt": 1769398789063,
     "type": "custom"
   },
   {

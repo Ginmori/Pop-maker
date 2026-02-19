@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Product, searchProduct, formatPrice } from '@/data/products';
+import { Product, CustomPriceOption, searchProduct, formatPrice } from '@/data/products';
 import { fetchBrandSegments, fetchProductBySku, searchProducts, ProductSuggestion } from '@/lib/productApi';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -34,6 +34,14 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
   const [uomInput, setUomInput] = useState('');
   const [normalPriceInput, setNormalPriceInput] = useState('');
   const [finalPriceInput, setFinalPriceInput] = useState('');
+  const [enableSecondPrice, setEnableSecondPrice] = useState(false);
+  const [uom2Input, setUom2Input] = useState('');
+  const [normalPrice2Input, setNormalPrice2Input] = useState('');
+  const [finalPrice2Input, setFinalPrice2Input] = useState('');
+  const [enableThirdPrice, setEnableThirdPrice] = useState(false);
+  const [uom3Input, setUom3Input] = useState('');
+  const [normalPrice3Input, setNormalPrice3Input] = useState('');
+  const [finalPrice3Input, setFinalPrice3Input] = useState('');
   const [baseDiscountInput, setBaseDiscountInput] = useState('');
   const [priceCutInput, setPriceCutInput] = useState('');
   const [extraDiscountInput, setExtraDiscountInput] = useState('');
@@ -175,6 +183,14 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
     setUomInput('');
     setNormalPriceInput('');
     setFinalPriceInput('');
+    setEnableSecondPrice(false);
+    setUom2Input('');
+    setNormalPrice2Input('');
+    setFinalPrice2Input('');
+    setEnableThirdPrice(false);
+    setUom3Input('');
+    setNormalPrice3Input('');
+    setFinalPrice3Input('');
     setBaseDiscountInput('');
     setPriceCutInput('');
     setExtraDiscountInput('');
@@ -202,6 +218,43 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
       toast.error('Harga final tidak valid');
       return;
     }
+
+    const parseOptionalPrice = (
+      enabled: boolean,
+      label: string,
+      uomValue: string,
+      normalValue: string,
+      finalValue: string
+    ): CustomPriceOption | null => {
+      if (!enabled) return null;
+      const uom = uomValue.trim();
+      const normal = normalValue ? Number(normalValue) : 0;
+      const promo = finalValue ? Number(finalValue) : normal;
+
+      if (!uom) {
+        toast.error(`UOM ${label} wajib diisi`);
+        return null;
+      }
+      if (!normalValue || !Number.isFinite(normal) || normal <= 0) {
+        toast.error(`Harga Mulai ${label} tidak valid`);
+        return null;
+      }
+      if (finalValue && (!Number.isFinite(promo) || promo < 0)) {
+        toast.error(`Harga Final ${label} tidak valid`);
+        return null;
+      }
+
+      return {
+        uom,
+        normalPrice: normal,
+        promoPrice: promo,
+      };
+    };
+
+    const secondPrice = parseOptionalPrice(enableSecondPrice, '2', uom2Input, normalPrice2Input, finalPrice2Input);
+    if (enableSecondPrice && !secondPrice) return;
+    const thirdPrice = parseOptionalPrice(enableThirdPrice, '3', uom3Input, normalPrice3Input, finalPrice3Input);
+    if (enableThirdPrice && !thirdPrice) return;
 
     let promoPrice = finalPrice;
     let discountPercent = 0;
@@ -248,6 +301,16 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
       discountAmount = priceCut > 0 ? priceCut : undefined;
     }
 
+    const customPriceOptions: CustomPriceOption[] = [
+      {
+        uom: uomInput.trim() || undefined,
+        normalPrice,
+        promoPrice,
+      },
+      ...(secondPrice ? [secondPrice] : []),
+      ...(thirdPrice ? [thirdPrice] : []),
+    ].filter((item) => item.normalPrice > 0 || item.promoPrice > 0);
+
     const id = `CUSTOM-${Date.now()}`;
 
     const product: Product = {
@@ -258,6 +321,7 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
       brandLogoUrl,
       description: descriptionInput.trim() || undefined,
       uom: uomInput.trim() || undefined,
+      customPriceOptions: customPriceOptions.length > 0 ? customPriceOptions : undefined,
       normalPrice,
       promoPrice,
       discount: discountPercent,
@@ -409,6 +473,76 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
               disabled={disabled}
             />
 
+            <label className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm">
+              <Checkbox
+                checked={enableSecondPrice}
+                onCheckedChange={(checked) => setEnableSecondPrice(Boolean(checked))}
+                disabled={disabled}
+              />
+              <span>Harga 2 (Opsional)</span>
+            </label>
+            {enableSecondPrice ? (
+              <div className="grid grid-cols-1 gap-2 rounded-md border border-border/70 p-2">
+                <Input
+                  placeholder="UOM 2 (contoh: Gln)"
+                  value={uom2Input}
+                  onChange={(e) => setUom2Input(e.target.value)}
+                  disabled={disabled}
+                />
+                <Input
+                  placeholder="Harga Mulai 2"
+                  type="number"
+                  min="0"
+                  value={normalPrice2Input}
+                  onChange={(e) => setNormalPrice2Input(e.target.value)}
+                  disabled={disabled}
+                />
+                <Input
+                  placeholder="Harga Final 2"
+                  type="number"
+                  min="0"
+                  value={finalPrice2Input}
+                  onChange={(e) => setFinalPrice2Input(e.target.value)}
+                  disabled={disabled}
+                />
+              </div>
+            ) : null}
+
+            <label className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm">
+              <Checkbox
+                checked={enableThirdPrice}
+                onCheckedChange={(checked) => setEnableThirdPrice(Boolean(checked))}
+                disabled={disabled}
+              />
+              <span>Harga 3 (Opsional)</span>
+            </label>
+            {enableThirdPrice ? (
+              <div className="grid grid-cols-1 gap-2 rounded-md border border-border/70 p-2">
+                <Input
+                  placeholder="UOM 3 (contoh: Pail)"
+                  value={uom3Input}
+                  onChange={(e) => setUom3Input(e.target.value)}
+                  disabled={disabled}
+                />
+                <Input
+                  placeholder="Harga Mulai 3"
+                  type="number"
+                  min="0"
+                  value={normalPrice3Input}
+                  onChange={(e) => setNormalPrice3Input(e.target.value)}
+                  disabled={disabled}
+                />
+                <Input
+                  placeholder="Harga Final 3"
+                  type="number"
+                  min="0"
+                  value={finalPrice3Input}
+                  onChange={(e) => setFinalPrice3Input(e.target.value)}
+                  disabled={disabled}
+                />
+              </div>
+            ) : null}
+
             {/* Price Mode Selector */}
             <div className="grid grid-cols-2 gap-2">
               <Button
@@ -516,8 +650,19 @@ export const SKUForm = ({ products, onAddProduct, onRemoveProduct, onSelectProdu
                   </span>
                 </div>
                 <div className="text-xs text-muted-foreground space-y-0.5">
-                  <p>Harga Normal: <span className="font-semibold text-foreground">Rp {formatPrice(product.normalPrice)}</span></p>
-                  <p>Harga Promo: <span className="font-semibold text-success">Rp {formatPrice(product.promoPrice)}</span></p>
+                  {product.customPriceOptions && product.customPriceOptions.length > 0 ? (
+                    product.customPriceOptions.map((option, index) => (
+                      <p key={`${product.sku}-price-${index}`}>
+                        Harga {index + 1}
+                        {option.uom ? ` (${option.uom})` : ''}: <span className="font-semibold text-foreground">Rp {formatPrice(option.normalPrice)}</span>{' -> '}<span className="font-semibold text-success">Rp {formatPrice(option.promoPrice)}</span>
+                      </p>
+                    ))
+                  ) : (
+                    <>
+                      <p>Harga Normal: <span className="font-semibold text-foreground">Rp {formatPrice(product.normalPrice)}</span></p>
+                      <p>Harga Promo: <span className="font-semibold text-success">Rp {formatPrice(product.promoPrice)}</span></p>
+                    </>
+                  )}
                   <p>Diskon: <span className="font-semibold text-success">{product.discount}%</span></p>
                   {product.extraDiscount ? (
                     <p>Extra Diskon: <span className="font-semibold text-success">{product.extraDiscount}%</span></p>
